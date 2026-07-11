@@ -14,6 +14,9 @@
     /__deepl/usage 必须携带正确 Token（请求头 X-Proxy-Token 或参数 token），
     否则返回 401。这样公网部署时别人无法盗用你的 DeepL 额度。
     /__deepl/health 始终开放，供网页自动探测代理是否存在。
+  - 服务器端密钥：设置环境变量 DEEPL_API_KEY 后，网页【无需填写】DeepL 密钥即可
+    使用（代理自动用该密钥）。适合公开部署时统一托管密钥，用户只需填代理 Token；
+    健康检查会返回 server_has_key 供前端判断。若网页也传了 key，则以网页的为准。
 
 本地用法：
   cd english-learning-app
@@ -35,6 +38,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 DIR = os.path.dirname(os.path.abspath(__file__))
 TOKEN = (os.environ.get("DEEPL_PROXY_TOKEN") or "").strip()
+SERVER_KEY = (os.environ.get("DEEPL_API_KEY") or "").strip()  # 服务器端托管的 DeepL 密钥（可选）
 
 
 def deepl_host(key):
@@ -76,11 +80,11 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/__deepl/health":
-            self._send_json(200, {"ok": True, "token_required": bool(TOKEN), "note": "DeepL proxy is running"})
+            self._send_json(200, {"ok": True, "token_required": bool(TOKEN), "server_has_key": bool(SERVER_KEY), "note": "DeepL proxy is running"})
             return
         if self.path.startswith("/__deepl/usage"):
             qs = parse_qs(urlparse(self.path).query)
-            key = qs.get("key", [""])[0]
+            key = (qs.get("key", [""])[0] or "").strip() or SERVER_KEY
             if not key:
                 self._send_json(400, {"error": "missing key"})
                 return
@@ -115,7 +119,7 @@ class Handler(SimpleHTTPRequestHandler):
                 payload = json.loads(raw.decode("utf-8"))
             except Exception:
                 payload = {}
-            key = payload.get("key", "")
+            key = (payload.get("key") or "").strip() or SERVER_KEY
             text = payload.get("text", "")
             target = payload.get("target_lang", "ZH")
             if not key or not text:
@@ -151,6 +155,8 @@ if __name__ == "__main__":
     print(f"English Learning App (DeepL proxy) -> http://{host}:{port}")
     if TOKEN:
         print("代理 Token 保护已启用：翻译请求需携带 X-Proxy-Token 或 token 参数。")
+    if SERVER_KEY:
+        print("服务器端 DeepL 密钥已配置：网页无需填写 DeepL 密钥即可使用。")
     else:
         print("提示：未设置 DEEPL_PROXY_TOKEN，代理对外开放（仅建议本地/可信网络使用）。")
     print("Ctrl+C 退出。")

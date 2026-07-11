@@ -309,7 +309,7 @@
         <p class="settings-desc">使用 <strong>DeepL 免费 API</strong> 可获得更高质量的翻译，免费额度 50 万字符/月。需到 DeepL 官网注册获取 API 密钥。</p>
         <label for="deeplKey" class="field-label">DeepL 免费 API 密钥</label>
         <input id="deeplKey" class="key-input" type="password" placeholder="粘贴以 :fx 结尾的免费密钥" autocomplete="off" spellcheck="false" />
-        <p class="settings-help">密钥仅保存在本浏览器（localStorage），不会上传至任何服务器。留空则使用默认免费翻译 MyMemory。</p>
+        <p class="settings-help" id="deeplKeyHelp">密钥仅保存在本浏览器（localStorage），不会上传至任何服务器。留空则使用默认免费翻译 MyMemory。</p>
         <label for="proxyToken" class="field-label">代理访问 Token（仅部署到公网时需要）</label>
         <input id="proxyToken" class="key-input" type="password" placeholder="本地使用可留空；需与服务器 DEEPL_PROXY_TOKEN 一致" autocomplete="off" spellcheck="false" />
         <p class="settings-help">部署到 CloudStudio 等公网环境时，服务器需设置环境变量 <code>DEEPL_PROXY_TOKEN</code>，此处填入相同的值，否则代理会拒绝翻译请求（防止他人盗用你的 DeepL 额度）。</p>
@@ -398,11 +398,17 @@
     let deeplKey = (function () { try { return localStorage.getItem(LS_DEEPL) || ""; } catch (e) { return ""; } })();
     let proxyToken = (function () { try { return localStorage.getItem(LS_PROXY_TOKEN) || ""; } catch (e) { return ""; } })();
     let deeplProxyBase = null; // 同域 DeepL 代理基地址，加载时自动检测
+    let serverHasDeeplKey = false; // 服务器是否配置了 DEEPL_API_KEY（网页可免填 DeepL 密钥）
     function detectDeeplProxy() {
       return fetch("/__deepl/health", { method: "GET", cache: "no-store" })
         .then((r) => r.json())
-        .then((d) => { deeplProxyBase = (d && d.ok) ? location.origin : null; return !!(d && d.ok); })
-        .catch(() => { deeplProxyBase = null; return false; });
+        .then((d) => {
+          const ok = !!(d && d.ok);
+          deeplProxyBase = ok ? location.origin : null;
+          serverHasDeeplKey = !!(d && d.server_has_key);
+          return ok;
+        })
+        .catch(() => { deeplProxyBase = null; serverHasDeeplKey = false; return false; });
     }
 
     /* ---------------- 常用短语词库 ---------------- */
@@ -823,11 +829,11 @@
 
     function translateViaDeepl(text, keyOverride) {
       const key = keyOverride || deeplKey;
-      if (!key) return Promise.reject(new Error("no_key"));
       if (deeplProxyBase) {
-        // 走同域代理，绕开浏览器 CORS 限制
+        // 走同域代理，绕开浏览器 CORS 限制（服务器可能已配置 DEEPL_API_KEY，可不传 key）
         const hdrs = { "Content-Type": "application/json" };
-        const payload = { key: key, text: text, target_lang: "ZH" };
+        const payload = { text: text, target_lang: "ZH" };
+        if (key) payload.key = key;
         if (proxyToken) { hdrs["X-Proxy-Token"] = proxyToken; payload.token = proxyToken; }
         return fetch(deeplProxyBase + "/__deepl/translate", {
           method: "POST",
@@ -840,6 +846,8 @@
             return t;
           });
       }
+      // 直连模式必须自带 key
+      if (!key) return Promise.reject(new Error("no_key"));
       return fetch("https://api-free.deepl.com/v2/translate", {
         method: "POST",
         headers: {
@@ -857,8 +865,9 @@
       });
     }
 
+    function usesDeepl() { return !!(deeplKey || serverHasDeeplKey); }
     function doTranslate(text) {
-      if (deeplKey) {
+      if (usesDeepl()) {
         return translateViaDeepl(text).catch((e) => {
           const msg = (e && e.message) || "";
           if (deeplProxyBase && /401|proxy token|invalid.*token/i.test(msg)) {
@@ -1177,6 +1186,14 @@
       proxyTokenInput.value = proxyToken || "";
       settingsStatus.textContent = "";
       settingsStatus.className = "settings-status";
+      const help = document.getElementById("deeplKeyHelp");
+      if (serverHasDeeplKey) {
+        deeplKeyInput.placeholder = "（可选）服务器已配置密钥，留空即用服务器密钥";
+        if (help) help.textContent = "检测到服务器端已配置 DeepL 密钥：你无需填写此项，跨设备只需填下方「代理访问 Token」即可使用 DeepL。";
+      } else {
+        deeplKeyInput.placeholder = "粘贴以 :fx 结尾的免费密钥";
+        if (help) help.textContent = "密钥仅保存在本浏览器（localStorage），不会上传至任何服务器。留空则使用默认免费翻译 MyMemory。";
+      }
       settingsModal.hidden = false;
       requestAnimationFrame(() => settingsModal.classList.add("open"));
       deeplKeyInput.focus();
@@ -1187,17 +1204,26 @@
     }
     function updateTransSourceLabel() {
       if (!transSourceLabel) return;
-      if (!deeplKey) { transSourceLabel.textContent = "翻译源：MyMemory"; return; }
-      transSourceLabel.textContent = deeplProxyBase ? "翻译源：DeepL（代理）" : "翻译源：DeepL（直连/CORS受限）";
+      if (!usesDeepl()) { transSourceLabel.textContent = "翻译源：MyMemory"; return; }
+      if (deeplProxyBase) {
+        transSourceLabel.textContent = deeplKey ? "翻译源：DeepL（代理）" : "翻译源：DeepL（服务器密钥）";
+      } else {
+        transSourceLabel.textContent = "翻译源：DeepL（直连/CORS受限）";
+      }
     }
     function checkDeeplUsage() {
-      if (!deeplKey) { settingsStatus.textContent = "请先填写并保存密钥，再查询额度。"; settingsStatus.className = "settings-status err"; return; }
+      if (!usesDeepl()) { settingsStatus.textContent = "请先填写并保存密钥，再查询额度。"; settingsStatus.className = "settings-status err"; return; }
       settingsStatus.textContent = "正在查询额度…";
       settingsStatus.className = "settings-status";
-      const call = deeplProxyBase
-        ? fetch(deeplProxyBase + "/__deepl/usage?key=" + encodeURIComponent(deeplKey) + (proxyToken ? "&token=" + encodeURIComponent(proxyToken) : ""), { method: "GET" })
-            .then((res) => res.json().then((d) => { if (!res.ok) throw new Error(d.error || ("HTTP " + res.status)); return d; }))
-        : fetch("https://api-free.deepl.com/v2/usage", { method: "GET", headers: { "Authorization": "DeepL-Auth-Key " + deeplKey } });
+      let call;
+      if (deeplProxyBase) {
+        let qs = ((deeplKey || !serverHasDeeplKey) ? "?key=" + encodeURIComponent(deeplKey || "") : "");
+        if (proxyToken) qs += (qs ? "&" : "?") + "token=" + encodeURIComponent(proxyToken);
+        call = fetch(deeplProxyBase + "/__deepl/usage" + qs, { method: "GET" })
+          .then((res) => res.json().then((d) => { if (!res.ok) throw new Error(d.error || ("HTTP " + res.status)); return d; }));
+      } else {
+        call = fetch("https://api-free.deepl.com/v2/usage", { method: "GET", headers: { "Authorization": "DeepL-Auth-Key " + deeplKey } });
+      }
       call.then((d) => {
           const used = d.character_count, lim = d.character_limit;
           if (used == null || lim == null) throw new Error("无数据");
@@ -1219,14 +1245,14 @@
       try { localStorage.removeItem(LS_DEEPL); } catch (e) {}
       deeplKeyInput.value = "";
       updateTransSourceLabel();
-      settingsStatus.textContent = "已清除密钥，翻译将使用 MyMemory。";
+      settingsStatus.textContent = serverHasDeeplKey ? "已清除本地密钥，继续使用服务器 DeepL 密钥。" : "已清除密钥，翻译将使用 MyMemory。";
       settingsStatus.className = "settings-status";
     });
     saveSettingsBtn.addEventListener("click", () => {
       const key = deeplKeyInput.value.trim();
       proxyToken = proxyTokenInput.value.trim();
       try { localStorage.setItem(LS_PROXY_TOKEN, proxyToken); } catch (e) {}
-      if (!key) {
+      if (!key && !serverHasDeeplKey) {
         deeplKey = "";
         try { localStorage.removeItem(LS_DEEPL); } catch (e) {}
         updateTransSourceLabel();
@@ -1234,14 +1260,15 @@
         settingsStatus.className = "settings-status";
         return;
       }
-      settingsStatus.textContent = "正在测试密钥…";
+      settingsStatus.textContent = "正在测试连接…";
       settingsStatus.className = "settings-status";
-      translateViaDeepl("test", key)
+      // 若未填本地 key 但服务器有 key，传 undefined 让代理使用服务器端密钥
+      translateViaDeepl("test", key || undefined)
         .then(() => {
           deeplKey = key;
-          try { localStorage.setItem(LS_DEEPL, key); } catch (e) {}
+          if (key) { try { localStorage.setItem(LS_DEEPL, key); } catch (e) {} }
           updateTransSourceLabel();
-          settingsStatus.textContent = "已保存，DeepL 连接正常。";
+          settingsStatus.textContent = key ? "已保存，DeepL 连接正常。" : "已保存，DeepL 连接正常（使用服务器密钥）。";
           settingsStatus.className = "settings-status ok";
         })
         .catch((e) => {
