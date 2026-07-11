@@ -1,0 +1,17 @@
+# Render 部署配置（基础设施即代码）
+# 用法：把 english-learning-app/ 推到 GitHub 仓库后，
+# 在 Render 控制台 New -> Blueprints -> 选择该仓库，即可一键按此配置创建服务。
+services:
+  - type: web
+    name: english-learning-app
+    runtime: python
+    plan: free                       # 免费额度；空闲 15 分钟后自动休眠，首次访问自动唤醒（冷启动约数秒）
+    region: oregon                   # 可改为 ap-southeast 等离你更近的区域
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python3 deepl_proxy.py"
+    healthCheckPath: "/__deepl/health"
+    envVars:
+      - key: DEEPL_PROXY_HOST
+        value: "0.0.0.0"
+      - key: DEEPL_PROXY_TOKEN
+        sync: false                  # 在 Render 控制台手动填写一个随机字符串作为代理 Token

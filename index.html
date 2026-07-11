@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>英语朗读学习助手</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --surface: #ffffff;
+      --surface-2: #f0f2f8;
+      --border: #e3e6ef;
+      --text: #1f2430;
+      --text-muted: #6b7280;
+      --accent: #4f46e5;
+      --accent-soft: #eef2ff;
+      --phrase-bg: #fff3cd;
+      --phrase-border: #f0d27a;
+      --speaking-bg: #ffe08a;
+      --playing-bg: #eef2ff;
+      --danger: #dc2626;
+      --radius: 14px;
+      --shadow: 0 10px 30px rgba(31, 36, 48, 0.08);
+      --shadow-sm: 0 2px 8px rgba(31, 36, 48, 0.06);
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); min-height: 100%; }
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* Header */
+    .app-header { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 20; }
+    .header-inner { max-width: 1080px; margin: 0 auto; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark { width: 40px; height: 40px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); border-radius: 12px; }
+    .brand-text h1 { font-size: 18px; margin: 0; letter-spacing: -0.01em; }
+    .brand-text p { font-size: 12.5px; margin: 2px 0 0; color: var(--text-muted); }
+    .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 4px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; border-radius: 9px; }
+
+    /* Layout */
+    .app-main { max-width: 1080px; width: 100%; margin: 0 auto; padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 16px; }
+
+    /* Input panel */
+    .input-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-sm); }
+    .field-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+    .source-text { width: 100%; resize: vertical; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; font-size: 15px; line-height: 1.6; color: var(--text); background: var(--surface-2); transition: border-color .15s ease, box-shadow .15s ease; }
+    .source-text:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); background: var(--surface); }
+    .input-actions { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+    .input-hint { font-size: 12.5px; color: var(--text-muted); margin-left: auto; }
+
+    /* Buttons */
+    .primary-btn { background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform .12s ease, background .15s ease, box-shadow .15s ease; }
+    .primary-btn:hover { background: #4338ca; }
+    .primary-btn:active { transform: scale(0.98); }
+    .primary-btn:focus-visible { outline: 3px solid rgba(79,70,229,.4); outline-offset: 2px; }
+    .ghost-btn { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 9px 14px; font-size: 13.5px; font-weight: 500; cursor: pointer; transition: transform .12s ease, background .15s ease, border-color .15s ease; }
+    .ghost-btn:hover { background: var(--surface-2); border-color: #cfd4e2; }
+    .ghost-btn:active { transform: scale(0.98); }
+    .ghost-btn:focus-visible { outline: 3px solid rgba(79,70,229,.35); outline-offset: 2px; }
+
+    /* Controls */
+    .controls { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 18px; flex-wrap: wrap; position: sticky; top: 69px; z-index: 15; }
+    .transport { display: flex; gap: 8px; }
+    .ctrl-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: transform .12s ease, background .15s ease, opacity .15s ease; }
+    .ctrl-btn:hover:not(:disabled) { background: #e7eaf3; }
+    .ctrl-btn:active:not(:disabled) { transform: scale(0.97); }
+    .ctrl-btn:disabled { opacity: .45; cursor: not-allowed; }
+    .ctrl-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .ctrl-btn.primary:hover:not(:disabled) { background: #4338ca; }
+    .ctrl-btn:focus-visible { outline: 3px solid rgba(79,70,229,.4); outline-offset: 2px; }
+    .ctrl-label { line-height: 1; }
+    .rate-control { display: flex; align-items: center; gap: 10px; }
+    .rate-slider { width: 150px; accent-color: var(--accent); cursor: pointer; }
+    .rate-label { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 14px; min-width: 42px; color: var(--accent); }
+    .right-controls { display: flex; align-items: center; gap: 12px; margin-left: auto; flex-wrap: wrap; }
+    .progress-label { font-size: 13px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .voice-select-wrap { display: flex; align-items: center; gap: 6px; }
+    .voice-select { border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; font-size: 13px; background: var(--surface); color: var(--text); cursor: pointer; }
+    .voice-select:focus-visible { outline: 3px solid rgba(79,70,229,.35); outline-offset: 2px; }
+
+    /* Reading area */
+    .reading-area { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 26px; box-shadow: var(--shadow); min-height: 200px; }
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--text-muted); text-align: center; padding: 50px 20px; }
+    .empty-state p { margin: 0; font-size: 14.5px; max-width: 420px; line-height: 1.6; }
+    .sentences { display: flex; flex-direction: column; gap: 18px; }
+    .sentence-block { border-radius: 10px; padding: 12px 14px; transition: background .2s ease; border-left: 3px solid transparent; }
+    .sentence-block.playing { background: var(--playing-bg); border-left-color: var(--accent); }
+    .sentence-original { font-size: 18px; line-height: 1.9; color: var(--text); word-break: break-word; }
+    .sentence-translation { margin-top: 8px; font-size: 14.5px; line-height: 1.7; color: var(--text-muted); border-top: 1px dashed var(--border); padding-top: 8px; }
+
+    /* word & phrase styling */
+    .word { cursor: pointer; border-radius: 4px; padding: 0 1px; transition: background .12s ease, color .12s ease; }
+    .word:hover { background: var(--accent-soft); color: var(--accent); }
+    .word.phrase { background: var(--phrase-bg); box-shadow: inset 0 -2px 0 var(--phrase-border); }
+    .word.phrase:hover { background: #ffe9a8; }
+    .word.speaking { background: var(--speaking-bg); color: #1f2430; box-shadow: inset 0 -2px 0 #e0a93b; }
+    .word:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+    /* Word card */
+    .word-card { position: fixed; z-index: 60; width: 300px; max-width: calc(100vw - 24px); background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 18px 50px rgba(31, 36, 48, 0.18); padding: 16px 18px 18px; animation: cardIn .14s ease-out; }
+    .word-card[hidden] { display: none; }
+    @keyframes cardIn { from { opacity: 0; transform: translateY(6px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .word-card-close { position: absolute; top: 10px; right: 10px; width: 26px; height: 26px; display: grid; place-items: center; border: none; background: var(--surface-2); color: var(--text-muted); border-radius: 8px; cursor: pointer; transition: background .15s ease, color .15s ease; }
+    .word-card-close:hover { background: #e7eaf3; color: var(--text); }
+    .wc-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding-right: 26px; }
+    .wc-word { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+    .wc-phonetic { font-size: 14px; color: var(--text-muted); font-style: italic; }
+    .wc-body { margin-top: 10px; font-size: 14px; line-height: 1.65; }
+    .wc-pos { display: inline-block; background: var(--accent-soft); color: var(--accent); font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px; margin: 4px 6px 4px 0; }
+    .wc-zh { color: var(--text); margin: 8px 0 4px; }
+    .wc-en { color: var(--text-muted); font-size: 13px; margin: 2px 0; }
+    .wc-loading, .wc-error { color: var(--text-muted); padding: 6px 0; }
+    .wc-error { color: var(--danger); }
+    .wc-audio-btn { margin-top: 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .wc-audio-btn:hover { background: #e7eaf3; }
+    .wc-audio-btn:disabled { opacity: .5; cursor: default; }
+
+    /* Side panel (生词本 / 历史记录) */
+    .overlay { position: fixed; inset: 0; background: rgba(17, 20, 30, .4); z-index: 65; opacity: 0; transition: opacity .2s ease; }
+    .overlay.open { opacity: 1; }
+    .side-panel { position: fixed; top: 0; right: 0; height: 100dvh; width: 380px; max-width: 92vw; background: var(--surface); z-index: 70; box-shadow: -12px 0 40px rgba(31, 36, 48, .15); transform: translateX(100%); transition: transform .22s cubic-bezier(.16, 1, .3, 1); display: flex; flex-direction: column; }
+    .side-panel.open { transform: translateX(0); }
+    .sp-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .sp-tabs { display: flex; gap: 6px; }
+    .sp-tab { background: transparent; border: none; font-size: 14px; font-weight: 600; color: var(--text-muted); padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+    .sp-tab.active { color: var(--accent); background: var(--accent-soft); }
+    .sp-close { width: 30px; height: 30px; border: none; background: var(--surface-2); border-radius: 8px; cursor: pointer; display: grid; place-items: center; color: var(--text-muted); }
+    .sp-close:hover { background: #e7eaf3; color: var(--text); }
+    .sp-body { flex: 1; overflow-y: auto; padding: 14px 16px; }
+
+    /* Settings modal */
+    .trans-source { font-size: 12.5px; color: var(--text-muted); background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+    .icon-btn { display: inline-flex; align-items: center; justify-content: center; padding: 9px; }
+    .modal { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 20px; background: rgba(17, 20, 30, .45); opacity: 0; transition: opacity .18s ease; }
+    .modal.open { opacity: 1; }
+    .modal[hidden] { display: none; }
+    .modal-card { width: 440px; max-width: 100%; background: var(--surface); border-radius: var(--radius); box-shadow: 0 24px 60px rgba(31, 36, 48, .25); padding: 20px 22px 22px; transform: translateY(8px); transition: transform .18s ease; }
+    .modal.open .modal-card { transform: translateY(0); }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .modal-head h2 { margin: 0; font-size: 17px; }
+    .modal-body { display: flex; flex-direction: column; gap: 8px; }
+    .settings-desc { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--text-muted); }
+    .settings-desc strong { color: var(--text); }
+    .key-input { width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 14px; color: var(--text); background: var(--surface-2); transition: border-color .15s ease, box-shadow .15s ease; }
+    .key-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); background: var(--surface); }
+    .settings-help { margin: 0; font-size: 12px; line-height: 1.55; color: var(--text-muted); }
+    .modal-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+    .settings-status { margin: 6px 0 0; font-size: 13px; line-height: 1.5; min-height: 18px; }
+    .settings-status.ok { color: #15803d; }
+    .settings-status.err { color: var(--danger); }
+    .sp-pane { display: flex; flex-direction: column; gap: 10px; }
+    .pane-empty { color: var(--text-muted); font-size: 13.5px; line-height: 1.7; text-align: center; padding: 40px 16px; }
+    .pane-toolbar { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 2px; }
+    .mini-btn { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; font-size: 12.5px; cursor: pointer; color: var(--text); transition: background .15s ease; }
+    .mini-btn:hover { background: #e7eaf3; }
+    .mini-btn.danger { color: var(--danger); }
+    .mini-btn.danger:hover { background: #fde8e8; border-color: #f3c4c4; }
+    .vocab-item, .hist-item { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--surface); }
+    .vi-main { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+    .vi-word { font-size: 17px; font-weight: 700; }
+    .vi-phon { font-size: 13px; color: var(--text-muted); font-style: italic; }
+    .vi-pos { margin: 6px 0 4px; }
+    .vi-zh { font-size: 14px; color: var(--text); }
+    .vi-en { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+    .vi-actions, .hi-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .hi-text { font-size: 13.5px; line-height: 1.6; color: var(--text); white-space: pre-wrap; word-break: break-word; max-height: 132px; overflow: hidden; }
+    .hi-meta { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+    /* Responsive */
+    @media (max-width: 720px) {
+      .controls { top: 64px; gap: 12px; }
+      .right-controls { margin-left: 0; width: 100%; justify-content: space-between; }
+      .rate-slider { width: 110px; }
+      .sentence-original { font-size: 16.5px; }
+      .reading-area { padding: 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+        </span>
+        <div class="brand-text">
+          <h1>英语朗读学习助手</h1>
+          <p>粘贴英文 · 自然朗读 · 短语高亮 · 即点即查</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="vocabBtn" class="ghost-btn" type="button" aria-haspopup="dialog">生词本<span id="vocabBadge" class="badge">0</span></button>
+        <button id="historyBtn" class="ghost-btn" type="button" aria-haspopup="dialog">历史记录<span id="historyBadge" class="badge">0</span></button>
+        <button id="settingsBtn" class="ghost-btn icon-btn" type="button" aria-haspopup="dialog" aria-label="翻译设置" title="翻译设置">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
+        <button id="toggleInputBtn" class="ghost-btn" type="button" aria-expanded="true" aria-controls="inputPanel">收起输入</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <!-- 输入面板 -->
+    <section id="inputPanel" class="input-panel" aria-label="文本输入">
+      <label for="sourceText" class="field-label">粘贴英文文本</label>
+      <textarea id="sourceText" class="source-text" rows="7" placeholder="在此粘贴任意英文段落，例如一篇新闻、一段演讲稿或一篇短文……" spellcheck="false"></textarea>
+      <div class="input-actions">
+        <button id="generateBtn" class="primary-btn" type="button">生成学习视图</button>
+        <button id="exampleBtn" class="ghost-btn" type="button">填入示例</button>
+        <span id="inputHint" class="input-hint" role="status" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <!-- 控制栏 -->
+    <section class="controls" aria-label="播放控制">
+      <div class="transport">
+        <button id="playBtn" class="ctrl-btn primary" type="button" aria-label="播放" disabled>
+          <svg class="icon-play" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+          <svg class="icon-resume" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true" style="display:none"><path d="M8 5v14l11-7z"></path></svg>
+          <span class="ctrl-label">播放</span>
+        </button>
+        <button id="pauseBtn" class="ctrl-btn" type="button" aria-label="暂停" disabled>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"></path></svg>
+          <span class="ctrl-label">暂停</span>
+        </button>
+        <button id="stopBtn" class="ctrl-btn" type="button" aria-label="停止" disabled>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
+          <span class="ctrl-label">停止</span>
+        </button>
+      </div>
+
+      <div class="rate-control">
+        <label for="rateSlider" class="field-label">语速</label>
+        <input id="rateSlider" class="rate-slider" type="range" min="0.5" max="2" step="0.1" value="1" />
+        <span id="rateLabel" class="rate-label">1.0x</span>
+      </div>
+
+      <div class="right-controls">
+        <span id="progressLabel" class="progress-label" aria-live="polite">— / —</span>
+        <button id="toggleTransBtn" class="ghost-btn" type="button">隐藏翻译</button>
+        <span id="transSourceLabel" class="trans-source" title="当前翻译来源">翻译源：MyMemory</span>
+        <label class="voice-select-wrap">
+          <span class="field-label">发音</span>
+          <select id="voiceSelect" class="voice-select" aria-label="选择发音人"></select>
+        </label>
+      </div>
+    </section>
+
+    <!-- 阅读区 -->
+    <section id="readingArea" class="reading-area" aria-label="阅读视图">
+      <div id="emptyState" class="empty-state">
+        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M12 6.25278V19.2528M12 6.25278C10.8321 5.47686 9.24649 5 7.5 5C5.75351 5 4.16789 5.47686 3 6.25278V19.2528C4.16789 18.4769 5.75351 18 7.5 18C9.24649 18 10.8321 18.4769 12 19.2528C13.1679 18.4769 14.7535 18 16.5 18C18.2465 18 19.8321 18.4769 21 19.2528V6.25278C19.8321 5.47686 18.2465 5 16.5 5C14.7535 5 13.1679 5.47686 12 6.25278Z"></path>
+        </svg>
+        <p>粘贴英文文本并点击「生成学习视图」，即可开始跟读与学习。点击任意单词可加入生词本。</p>
+      </div>
+      <div id="sentences" class="sentences" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <!-- 单词信息卡片 -->
+  <div id="wordCard" class="word-card" role="dialog" aria-label="单词释义" hidden>
+    <button id="wordCardClose" class="word-card-close" type="button" aria-label="关闭">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+    </button>
+    <div class="wc-head">
+      <span id="wcWord" class="wc-word">word</span>
+      <span id="wcPhonetic" class="wc-phonetic"></span>
+    </div>
+    <div id="wcBody" class="wc-body"></div>
+  </div>
+
+  <!-- 侧边面板：生词本 / 历史记录 -->
+  <div id="overlay" class="overlay" hidden></div>
+  <aside id="sidePanel" class="side-panel" role="dialog" aria-modal="true" aria-label="生词本与历史记录" hidden>
+    <div class="sp-header">
+      <div class="sp-tabs">
+        <button class="sp-tab active" data-tab="vocab" type="button">生词本</button>
+        <button class="sp-tab" data-tab="history" type="button">历史记录</button>
+      </div>
+      <button id="sidePanelClose" class="sp-close" type="button" aria-label="关闭">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    <div class="sp-body">
+      <div id="vocabPane" class="sp-pane"></div>
+      <div id="historyPane" class="sp-pane" hidden></div>
+    </div>
+  </aside>
+
+  <!-- 设置弹窗：DeepL 翻译密钥 -->
+  <div id="settingsModal" class="modal" role="dialog" aria-modal="true" aria-label="翻译设置" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2>翻译设置</h2>
+        <button id="settingsClose" class="sp-close" type="button" aria-label="关闭">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="settings-desc">使用 <strong>DeepL 免费 API</strong> 可获得更高质量的翻译，免费额度 50 万字符/月。需到 DeepL 官网注册获取 API 密钥。</p>
+        <label for="deeplKey" class="field-label">DeepL 免费 API 密钥</label>
+        <input id="deeplKey" class="key-input" type="password" placeholder="粘贴以 :fx 结尾的免费密钥" autocomplete="off" spellcheck="false" />
+        <p class="settings-help">密钥仅保存在本浏览器（localStorage），不会上传至任何服务器。留空则使用默认免费翻译 MyMemory。</p>
+        <label for="proxyToken" class="field-label">代理访问 Token（仅部署到公网时需要）</label>
+        <input id="proxyToken" class="key-input" type="password" placeholder="本地使用可留空；需与服务器 DEEPL_PROXY_TOKEN 一致" autocomplete="off" spellcheck="false" />
+        <p class="settings-help">部署到 CloudStudio 等公网环境时，服务器需设置环境变量 <code>DEEPL_PROXY_TOKEN</code>，此处填入相同的值，否则代理会拒绝翻译请求（防止他人盗用你的 DeepL 额度）。</p>
+        <div class="modal-actions">
+          <button id="saveSettingsBtn" class="primary-btn" type="button">保存并测试</button>
+          <button id="clearSettingsBtn" class="ghost-btn" type="button">清除密钥</button>
+          <button id="usageSettingsBtn" class="ghost-btn" type="button">查询额度</button>
+        </div>
+        <p id="settingsStatus" class="settings-status" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    "use strict";
+
+    /* ---------------- DOM ---------------- */
+    const $ = (id) => document.getElementById(id);
+    const sourceText = $("sourceText");
+    const generateBtn = $("generateBtn");
+    const exampleBtn = $("exampleBtn");
+    const inputHint = $("inputHint");
+    const inputPanel = $("inputPanel");
+    const toggleInputBtn = $("toggleInputBtn");
+    const playBtn = $("playBtn");
+    const pauseBtn = $("pauseBtn");
+    const stopBtn = $("stopBtn");
+    const rateSlider = $("rateSlider");
+    const rateLabel = $("rateLabel");
+    const toggleTransBtn = $("toggleTransBtn");
+    const voiceSelect = $("voiceSelect");
+    const progressLabel = $("progressLabel");
+    const emptyState = $("emptyState");
+    const sentencesEl = $("sentences");
+    const wordCard = $("wordCard");
+    const wordCardClose = $("wordCardClose");
+    const wcWord = $("wcWord");
+    const wcPhonetic = $("wcPhonetic");
+    const wcBody = $("wcBody");
+    const vocabBtn = $("vocabBtn");
+    const historyBtn = $("historyBtn");
+    const vocabBadge = $("vocabBadge");
+    const historyBadge = $("historyBadge");
+    const sidePanel = $("sidePanel");
+    const overlay = $("overlay");
+    const sidePanelClose = $("sidePanelClose");
+    const vocabPane = $("vocabPane");
+    const historyPane = $("historyPane");
+    const transSourceLabel = $("transSourceLabel");
+    const settingsBtn = $("settingsBtn");
+    const settingsModal = $("settingsModal");
+    const settingsClose = $("settingsClose");
+    const deeplKeyInput = $("deeplKey");
+    const proxyTokenInput = $("proxyToken");
+    const saveSettingsBtn = $("saveSettingsBtn");
+    const clearSettingsBtn = $("clearSettingsBtn");
+    const usageSettingsBtn = $("usageSettingsBtn");
+    const settingsStatus = $("settingsStatus");
+
+    /* ---------------- State ---------------- */
+    let sentences = [];
+    let showTranslations = true;
+    let currentRate = 1;
+    let isPlaying = false;
+    let isPaused = false;
+    let currentSentenceIndex = -1;
+    let canceling = false;
+    let voices = [];
+    let selectedVoice = null;
+
+    const wordCache = new Map();
+    const sentenceCache = new Map();
+
+    /* localStorage 持久化：生词本 & 历史记录 */
+    const LS_VOCAB = "elapp_vocab";
+    const LS_HISTORY = "elapp_history";
+    function loadJSON(key, def) { try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? def : v; } catch (e) { return def; } }
+    function saveJSON(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+    let vocab = loadJSON(LS_VOCAB, []);
+    let history = loadJSON(LS_HISTORY, []);
+
+    /* DeepL 免费 API 密钥（本地保存，不写死在代码里） */
+    const LS_DEEPL = "elapp_deepl_key";
+    const LS_PROXY_TOKEN = "elapp_proxy_token";
+    let deeplKey = (function () { try { return localStorage.getItem(LS_DEEPL) || ""; } catch (e) { return ""; } })();
+    let proxyToken = (function () { try { return localStorage.getItem(LS_PROXY_TOKEN) || ""; } catch (e) { return ""; } })();
+    let deeplProxyBase = null; // 同域 DeepL 代理基地址，加载时自动检测
+    function detectDeeplProxy() {
+      return fetch("/__deepl/health", { method: "GET", cache: "no-store" })
+        .then((r) => r.json())
+        .then((d) => { deeplProxyBase = (d && d.ok) ? location.origin : null; return !!(d && d.ok); })
+        .catch(() => { deeplProxyBase = null; return false; });
+    }
+
+    /* ---------------- 常用短语词库 ---------------- */
+    const PHRASES = [
+      "as a result", "as a consequence", "in addition", "on the other hand",
+      "for example", "for instance", "such as", "in order to", "due to",
+      "because of", "in spite of", "instead of", "according to", "in terms of",
+      "with regard to", "as well as", "rather than", "in fact", "as a matter of fact",
+      "by means of", "in case of", "in charge of", "aware of", "capable of",
+      "fond of", "afraid of", "proud of", "full of", "a lot of", "lots of",
+      "plenty of", "a number of", "a variety of", "a range of", "in front of",
+      "in the middle of", "at the end of", "by the end of", "make a difference",
+      "take into account", "pay attention to", "keep in mind", "have an impact on",
+      "have an effect on", "play a role", "play a part", "contribute to", "lead to",
+      "result in", "result from", "consist of", "depend on", "rely on", "focus on",
+      "concentrate on", "base on", "carry out", "carry on", "find out", "figure out",
+      "point out", "bring about", "bring up", "set up", "set out", "set off",
+      "put forward", "put up with", "come up with", "deal with", "cope with",
+      "get along with", "look forward to", "look after", "look into", "look up",
+      "take part in", "take place", "take care of", "take advantage of", "make use of",
+      "make sense", "make sure", "make up", "make out", "keep up with",
+      "catch up with", "in conclusion", "to sum up", "all in all", "on the whole",
+      "by and large", "first of all", "to begin with", "in the first place",
+      "last but not least", "what is more", "moreover", "furthermore",
+      "nevertheless", "nonetheless", "even though", "even if", "as long as",
+      "as soon as", "as far as", "provided that", "given that", "now that",
+      "from time to time", "at the same time", "at present", "at first", "at last",
+      "at least", "at most", "in general", "in particular", "in detail",
+      "in practice", "in theory", "in public", "in private", "on average",
+      "on purpose", "on demand", "on behalf of", "by accident", "by chance",
+      "by far", "in no way", "under no circumstances", "all of a sudden", "as a rule",
+      "as a whole", "at a loss", "out of date", "up to date", "in common",
+      "in trouble", "in danger", "at risk", "at stake", "under control", "under way",
+      "over time", "over the years", "ahead of time", "behind schedule", "on schedule",
+      "on time", "in time", "at the moment", "for the time being", "in the long run",
+      "in the short term", "for free", "for sale", "on sale", "on display",
+      "on the rise", "on the decline", "in the hope that", "in other words",
+      "by the way", "little by little", "step by step", "side by side", "face to face",
+      "hand in hand", "more or less", "sooner or later", "once in a while",
+      "every now and then", "now and then", "here and there", "back and forth",
+      "up and down", "off and on", "again and again", "time and again",
+      "over and over", "day after day", "year after year", "one after another",
+      "one by one", "word for word", "as follows", "as usual", "as expected",
+      "in response to", "in relation to", "with respect to", "in contrast to",
+      "in comparison with", "compared to", "relative to", "prior to", "subsequent to",
+      "apart from", "aside from", "other than", "except for", "regardless of",
+      "irrespective of", "in view of", "owing to", "thanks to", "on account of",
+      "by virtue of", "in the face of", "at the expense of", "for the sake of",
+      "in favor of", "in support of", "on top of", "in the course of", "along with",
+      "together with", "combined with", "coupled with", "followed by",
+      "characterized by", "defined as", "referred to as", "known as", "regarded as",
+      "viewed as", "seen as", "treated as", "used as", "served as", "acted as",
+      "based on", "derived from", "originated from", "stem from", "arise from",
+      "emerge from", "spring from", "flow from", "come from", "date from",
+      "differ from", "suffer from", "recover from", "benefit from", "learn from",
+      "separate from", "distinguish from", "protect from", "prevent from",
+      "keep from", "stop from", "save from", "free from", "escape from", "shelter from"
+    ];
+    const phraseSet = new Set(PHRASES);
+    const maxPhraseLen = PHRASES.reduce((m, p) => Math.max(m, p.split(" ").length), 1);
+
+    const FALLBACK_DICT = {
+      the: { zh: "这/那（定冠词）", phonetic: "/ðə/", pos: ["article"] },
+      a: { zh: "一个（不定冠词）", phonetic: "/ə/", pos: ["article"] },
+      an: { zh: "一个（不定冠词）", phonetic: "/ən/", pos: ["article"] },
+      and: { zh: "和，与", phonetic: "/ænd/", pos: ["conjunction"] },
+      but: { zh: "但是", phonetic: "/bʌt/", pos: ["conjunction"] },
+      or: { zh: "或者", phonetic: "/ɔːr/", pos: ["conjunction"] },
+      in: { zh: "在……里面", phonetic: "/ɪn/", pos: ["preposition"] },
+      on: { zh: "在……上面", phonetic: "/ɒn/", pos: ["preposition"] },
+      at: { zh: "在（某处/时刻）", phonetic: "/æt/", pos: ["preposition"] },
+      to: { zh: "到，向", phonetic: "/tuː/", pos: ["preposition", "particle"] },
+      of: { zh: "……的", phonetic: "/əv/", pos: ["preposition"] },
+      for: { zh: "为了，给", phonetic: "/fɔːr/", pos: ["preposition"] },
+      with: { zh: "和……一起，用", phonetic: "/wɪð/", pos: ["preposition"] },
+      is: { zh: "是（be 第三人称单数）", phonetic: "/ɪz/", pos: ["verb"] },
+      are: { zh: "是（be 复数）", phonetic: "/ɑːr/", pos: ["verb"] },
+      was: { zh: "是（be 过去式）", phonetic: "/wɒz/", pos: ["verb"] },
+      were: { zh: "是（be 过去式复数）", phonetic: "/wɜːr/", pos: ["verb"] },
+      be: { zh: "是，存在", phonetic: "/biː/", pos: ["verb"] },
+      have: { zh: "有", phonetic: "/hæv/", pos: ["verb"] },
+      has: { zh: "有（第三人称单数）", phonetic: "/hæz/", pos: ["verb"] },
+      do: { zh: "做（助动词）", phonetic: "/duː/", pos: ["verb", "auxiliary"] },
+      does: { zh: "做（第三人称单数）", phonetic: "/dʌz/", pos: ["verb"] },
+      this: { zh: "这个", phonetic: "/ðɪs/", pos: ["pronoun", "determiner"] },
+      that: { zh: "那个", phonetic: "/ðæt/", pos: ["pronoun", "conjunction"] },
+      it: { zh: "它", phonetic: "/ɪt/", pos: ["pronoun"] },
+      they: { zh: "他们/她们/它们", phonetic: "/ðeɪ/", pos: ["pronoun"] },
+      we: { zh: "我们", phonetic: "/wiː/", pos: ["pronoun"] },
+      you: { zh: "你/你们", phonetic: "/juː/", pos: ["pronoun"] },
+      he: { zh: "他", phonetic: "/hiː/", pos: ["pronoun"] },
+      she: { zh: "她", phonetic: "/ʃiː/", pos: ["pronoun"] },
+      not: { zh: "不，没有", phonetic: "/nɒt/", pos: ["adverb"] },
+      can: { zh: "能，会", phonetic: "/kæn/", pos: ["modal verb"] },
+      will: { zh: "将，会", phonetic: "/wɪl/", pos: ["modal verb"] },
+      if: { zh: "如果", phonetic: "/ɪf/", pos: ["conjunction"] },
+      when: { zh: "当……时", phonetic: "/wen/", pos: ["adverb", "conjunction"] },
+      because: { zh: "因为", phonetic: "/bɪˈkɒz/", pos: ["conjunction"] },
+      important: { zh: "重要的", phonetic: "/ɪmˈpɔːtnt/", pos: ["adjective"] },
+      different: { zh: "不同的", phonetic: "/ˈdɪfrənt/", pos: ["adjective"] },
+      people: { zh: "人们，人", phonetic: "/ˈpiːpl/", pos: ["noun"] },
+      world: { zh: "世界", phonetic: "/wɜːld/", pos: ["noun"] },
+      time: { zh: "时间，次", phonetic: "/taɪm/", pos: ["noun"] },
+      year: { zh: "年", phonetic: "/jɪər/", pos: ["noun"] },
+      company: { zh: "公司", phonetic: "/ˈkʌmpəni/", pos: ["noun"] },
+      government: { zh: "政府", phonetic: "/ˈɡʌvənmənt/", pos: ["noun"] },
+      technology: { zh: "科技，技术", phonetic: "/tekˈnɒlədʒi/", pos: ["noun"] },
+      change: { zh: "改变，变化", phonetic: "/tʃeɪndʒ/", pos: ["noun", "verb"] },
+      increase: { zh: "增加，增长", phonetic: "/ɪnˈkriːs/", pos: ["verb", "noun"] },
+      develop: { zh: "发展，开发", phonetic: "/dɪˈveləp/", pos: ["verb"] },
+      provide: { zh: "提供", phonetic: "/prəˈvaɪd/", pos: ["verb"] },
+      achieve: { zh: "实现，达成", phonetic: "/əˈtʃiːv/", pos: ["verb"] },
+      understand: { zh: "理解，明白", phonetic: "/ˌʌndərˈstænd/", pos: ["verb"] },
+      environment: { zh: "环境", phonetic: "/ɪnˈvaɪrənmənt/", pos: ["noun"] },
+      economic: { zh: "经济的", phonetic: "/ˌiːkəˈnɒmɪk/", pos: ["adjective"] },
+      social: { zh: "社会的", phonetic: "/ˈsəʊʃl/", pos: ["adjective"] },
+      global: { zh: "全球的", phonetic: "/ˈɡləʊbl/", pos: ["adjective"] },
+      sustainable: { zh: "可持续的", phonetic: "/səˈsteɪnəbl/", pos: ["adjective"] }
+    };
+
+    /* ============================================================
+       1. 文本处理：分句 + 渲染
+       ============================================================ */
+    function splitSentences(text) {
+      const cleaned = text.replace(/\s+/g, " ").trim();
+      if (!cleaned) return [];
+      const parts = cleaned.match(/[^.!?]+[.!?]+["')\]»”’]*|\S[^.!?]*$/g);
+      if (!parts) return [cleaned];
+      return parts.map((p) => p.trim()).filter(Boolean);
+    }
+
+    function tokenize(text) {
+      const words = [];
+      const re = /\b[\w']+\b/g;
+      let m;
+      while ((m = re.exec(text)) !== null) {
+        words.push({ text: m[0], start: m.index, end: m.index + m[0].length, phrase: false, el: null });
+      }
+      return words;
+    }
+
+    function markPhrases(words) {
+      const lower = words.map((w) => w.text.toLowerCase());
+      let i = 0;
+      while (i < words.length) {
+        let matched = false;
+        const maxLen = Math.min(maxPhraseLen, words.length - i);
+        for (let len = maxLen; len >= 1; len--) {
+          const phrase = lower.slice(i, i + len).join(" ");
+          if (phraseSet.has(phrase)) {
+            for (let k = 0; k < len; k++) words[i + k].phrase = true;
+            i += len;
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) i++;
+      }
+    }
+
+    function buildSentenceDOM(sentence) {
+      const words = tokenize(sentence.text);
+      markPhrases(words);
+      const frag = document.createDocumentFragment();
+      let cursor = 0;
+      words.forEach((w) => {
+        if (w.start > cursor) {
+          frag.appendChild(document.createTextNode(sentence.text.slice(cursor, w.start)));
+        }
+        const span = document.createElement("span");
+        span.className = "word";
+        if (w.phrase) span.classList.add("phrase");
+        span.textContent = w.text;
+        span.tabIndex = 0;
+        span.dataset.word = w.text.toLowerCase();
+        span.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          showWordCard(w.text, span);
+        });
+        span.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            showWordCard(w.text, span);
+          }
+        });
+        frag.appendChild(span);
+        w.el = span;
+        cursor = w.end;
+      });
+      if (cursor < sentence.text.length) {
+        frag.appendChild(document.createTextNode(sentence.text.slice(cursor)));
+      }
+      sentence.words = words;
+      return frag;
+    }
+
+    function renderSentences() {
+      sentencesEl.innerHTML = "";
+      if (sentences.length === 0) {
+        emptyState.style.display = "flex";
+        sentencesEl.style.display = "none";
+        return;
+      }
+      emptyState.style.display = "none";
+      sentencesEl.style.display = "flex";
+
+      sentences.forEach((s, i) => {
+        const block = document.createElement("div");
+        block.className = "sentence-block";
+        block.dataset.index = String(i);
+
+        const original = document.createElement("div");
+        original.className = "sentence-original";
+        original.appendChild(buildSentenceDOM(s));
+
+        const trans = document.createElement("div");
+        trans.className = "sentence-translation";
+        trans.style.display = showTranslations ? "block" : "none";
+        trans.textContent = "翻译加载中…";
+
+        s.translationEl = trans;
+        s.blockEl = block;
+        block.appendChild(original);
+        block.appendChild(trans);
+        sentencesEl.appendChild(block);
+      });
+    }
+
+    /* ============================================================
+       2. 文本转语音（Web Speech API）
+       ============================================================ */
+    function loadVoices() {
+      voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+      voiceSelect.innerHTML = "";
+      const enVoices = voices.filter((v) => v.lang && v.lang.toLowerCase().startsWith("en"));
+      const list = enVoices.length ? enVoices : voices;
+      list.forEach((v, idx) => {
+        const opt = document.createElement("option");
+        opt.value = String(idx);
+        opt.textContent = `${v.name} (${v.lang})`;
+        voiceSelect.appendChild(opt);
+      });
+      const preferred =
+        list.find((v) => /Google US English/i.test(v.name)) ||
+        list.find((v) => v.lang === "en-US") ||
+        list.find((v) => v.lang && v.lang.toLowerCase().startsWith("en"));
+      selectedVoice = preferred || null;
+      if (selectedVoice) voiceSelect.value = String(list.indexOf(selectedVoice));
+    }
+
+    function pickVoiceByIndex(idx) {
+      const enVoices = voices.filter((v) => v.lang && v.lang.toLowerCase().startsWith("en"));
+      const list = enVoices.length ? enVoices : voices;
+      selectedVoice = list[Number(idx)] || null;
+    }
+
+    function speakSentence(i) {
+      if (!window.speechSynthesis) return;
+      if (i >= sentences.length) { finishPlayback(); return; }
+      currentSentenceIndex = i;
+      const s = sentences[i];
+      highlightCurrent(i);
+      updateProgress();
+
+      const u = new SpeechSynthesisUtterance(s.text);
+      u.lang = "en-US";
+      u.rate = currentRate;
+      u.pitch = 1;
+      if (selectedVoice) u.voice = selectedVoice;
+
+      u.onboundary = (e) => { if (typeof e.charIndex === "number") highlightWord(i, e.charIndex); };
+      u.onend = () => {
+        if (canceling) return;
+        if (!isPlaying) return;
+        clearWordHighlight(i);
+        speakSentence(i + 1);
+      };
+      u.onerror = (e) => {
+        if (e && e.error === "interrupted") return;
+        if (isPlaying && !canceling) { clearWordHighlight(i); speakSentence(i + 1); }
+      };
+      window.speechSynthesis.speak(u);
+    }
+
+    function startPlayback() {
+      if (!window.speechSynthesis) { setHint("当前浏览器不支持语音合成（Web Speech API）。"); return; }
+      if (sentences.length === 0) { setHint("请先生成学习视图。"); return; }
+      if (isPlaying && !isPaused) return;
+      if (isPaused) { isPaused = false; window.speechSynthesis.resume(); updateTransportUI(); return; }
+      isPlaying = true;
+      updateTransportUI();
+      const start = currentSentenceIndex >= 0 ? currentSentenceIndex : 0;
+      speakSentence(start);
+    }
+    function pausePlayback() {
+      if (isPlaying && !isPaused && window.speechSynthesis) {
+        window.speechSynthesis.pause();
+        isPaused = true;
+        updateTransportUI();
+      }
+    }
+    function stopPlayback() {
+      if (window.speechSynthesis) { canceling = true; window.speechSynthesis.cancel(); canceling = false; }
+      isPlaying = false; isPaused = false; currentSentenceIndex = -1;
+      sentences.forEach((s, idx) => clearWordHighlight(idx));
+      highlightCurrent(-1);
+      updateProgress();
+      updateTransportUI();
+    }
+    function finishPlayback() {
+      isPlaying = false; isPaused = false; currentSentenceIndex = -1;
+      highlightCurrent(-1);
+      updateProgress();
+      updateTransportUI();
+    }
+    function reSpeakCurrent() {
+      if (!isPlaying || isPaused || currentSentenceIndex < 0) return;
+      canceling = true;
+      window.speechSynthesis.cancel();
+      setTimeout(() => { canceling = false; speakSentence(currentSentenceIndex); }, 90);
+    }
+
+    /* 高亮辅助 */
+    function highlightCurrent(i) {
+      sentences.forEach((s) => s.blockEl && s.blockEl.classList.remove("playing"));
+      if (i >= 0 && sentences[i] && sentences[i].blockEl) {
+        sentences[i].blockEl.classList.add("playing");
+        sentences[i].blockEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+    function highlightWord(sentIdx, charIndex) {
+      const s = sentences[sentIdx];
+      if (!s || !s.words) return;
+      s.words.forEach((w) => {
+        if (charIndex >= w.start && charIndex < w.end) { if (w.el) w.el.classList.add("speaking"); }
+        else if (w.el) w.el.classList.remove("speaking");
+      });
+    }
+    function clearWordHighlight(i) {
+      const s = sentences[i];
+      if (!s || !s.words) return;
+      s.words.forEach((w) => w.el && w.el.classList.remove("speaking"));
+    }
+    function updateProgress() {
+      if (sentences.length === 0) progressLabel.textContent = "— / —";
+      else { const cur = currentSentenceIndex >= 0 ? currentSentenceIndex + 1 : 0; progressLabel.textContent = `${cur} / ${sentences.length}`; }
+    }
+    function updateTransportUI() {
+      const hasText = sentences.length > 0;
+      playBtn.disabled = !hasText || (isPlaying && !isPaused);
+      pauseBtn.disabled = !isPlaying || isPaused;
+      stopBtn.disabled = !isPlaying;
+      const label = playBtn.querySelector(".ctrl-label");
+      const iconPlay = playBtn.querySelector(".icon-play");
+      const iconResume = playBtn.querySelector(".icon-resume");
+      if (isPaused) { label.textContent = "继续"; iconPlay.style.display = "none"; iconResume.style.display = "block"; playBtn.setAttribute("aria-label", "继续"); }
+      else { label.textContent = "播放"; iconPlay.style.display = "block"; iconResume.style.display = "none"; playBtn.setAttribute("aria-label", "播放"); }
+    }
+
+    /* ============================================================
+       3. 单词查词（词典 API + 翻译 API）
+       ============================================================ */
+    function lookupWord(rawWord) {
+      const word = rawWord.toLowerCase().replace(/[^a-z'-]/g, "");
+      if (!word) return Promise.resolve({ word: rawWord, error: "无效的单词" });
+      if (wordCache.has(word)) return Promise.resolve(wordCache.get(word));
+
+      const result = { word: rawWord };
+      let ok = false;
+
+      return fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`)
+        .then((res) => { if (!res.ok) throw new Error("no dict"); return res.json(); })
+        .then((data) => {
+          const entry = Array.isArray(data) ? data[0] : null;
+          if (entry) {
+            result.phonetic = entry.phonetic || (entry.phonetics && entry.phonetics.find((p) => p.text)?.text) || "";
+            result.pos = (entry.meanings || []).map((m) => m.partOfSpeech).filter(Boolean);
+            result.enDef = (entry.meanings && entry.meanings[0]?.definitions?.[0]?.definition) || "";
+            ok = true;
+          }
+        })
+        .catch(() => {})
+        .then(() => doTranslate(word))
+        .then((zh) => { if (zh) { result.zh = zh; ok = true; } })
+        .catch(() => {})
+        .then(() => {
+          if (!ok && FALLBACK_DICT[word]) {
+            const f = FALLBACK_DICT[word];
+            result.phonetic = result.phonetic || f.phonetic;
+            result.pos = result.pos || f.pos;
+            result.zh = f.zh;
+            result.enDef = result.enDef || "";
+            ok = true;
+          }
+          if (!ok) result.error = "暂无可用的在线释义，请检查网络或部署到本地服务器后再试。";
+          wordCache.set(word, result);
+          return result;
+        });
+    }
+
+    /* ---- 翻译：DeepL 免费 API 优先，MyMemory 兜底 ---- */
+    function translateViaMyMemory(text) {
+      return fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|zh-CN`)
+        .then((res) => res.json())
+        .then((data) => {
+          const zh = data?.responseData?.translatedText || "";
+          if (/MYMEMORY WARNING/i.test(zh)) throw new Error("mymemory_limit");
+          if (!zh) throw new Error("empty");
+          return zh;
+        });
+    }
+
+    function translateViaDeepl(text, keyOverride) {
+      const key = keyOverride || deeplKey;
+      if (!key) return Promise.reject(new Error("no_key"));
+      if (deeplProxyBase) {
+        // 走同域代理，绕开浏览器 CORS 限制
+        const hdrs = { "Content-Type": "application/json" };
+        const payload = { key: key, text: text, target_lang: "ZH" };
+        if (proxyToken) { hdrs["X-Proxy-Token"] = proxyToken; payload.token = proxyToken; }
+        return fetch(deeplProxyBase + "/__deepl/translate", {
+          method: "POST",
+          headers: hdrs,
+          body: JSON.stringify(payload)
+        }).then((res) => res.json().then((d) => { if (!res.ok) throw new Error(d.error || ("HTTP " + res.status)); return d; }))
+          .then((data) => {
+            const t = data && data.translations && data.translations[0] && data.translations[0].text;
+            if (!t) throw new Error("empty");
+            return t;
+          });
+      }
+      return fetch("https://api-free.deepl.com/v2/translate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "DeepL-Auth-Key " + key
+        },
+        body: JSON.stringify({ text: [text], target_lang: "ZH" })
+      }).then((res) => {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      }).then((data) => {
+        const t = data && data.translations && data.translations[0] && data.translations[0].text;
+        if (!t) throw new Error("empty");
+        return t;
+      });
+    }
+
+    function doTranslate(text) {
+      if (deeplKey) {
+        return translateViaDeepl(text).catch((e) => {
+          console.warn("DeepL 翻译失败，回退到 MyMemory：", e && e.message);
+          return translateViaMyMemory(text);
+        });
+      }
+      return translateViaMyMemory(text);
+    }
+
+    function translateText(text) {
+      if (sentenceCache.has(text)) return Promise.resolve(sentenceCache.get(text));
+      return doTranslate(text).then((zh) => {
+        const out = zh || "（翻译暂不可用，请检查网络）";
+        sentenceCache.set(text, out);
+        return out;
+      }).catch(() => {
+        const out = "（翻译失败）";
+        sentenceCache.set(text, out);
+        return out;
+      });
+    }
+
+    function translateAll() {
+      for (const s of sentences) {
+        if (s.translationEl.textContent && s.translationEl.textContent !== "翻译加载中…") continue;
+        translateText(s.text).then((zh) => { s.translationEl.textContent = zh; }).catch(() => { s.translationEl.textContent = "（翻译失败）"; });
+      }
+    }
+
+    /* ---- 单词卡片 ---- */
+    function renderWordCard(data) {
+      wcWord.textContent = data.word;
+      wcPhonetic.textContent = data.phonetic || "";
+      if (data.error) { wcBody.innerHTML = `<div class="wc-error">${escapeHtml(data.error)}</div>`; return; }
+
+      const wordKey = (data.word || "").toLowerCase().replace(/[^a-z'-]/g, "");
+      const already = vocab.some((v) => v.word.toLowerCase() === wordKey);
+
+      let html = "";
+      if (data.pos && data.pos.length) html += data.pos.map((p) => `<span class="wc-pos">${escapeHtml(p)}</span>`).join("");
+      if (data.zh) html += `<div class="wc-zh">中文：${escapeHtml(data.zh)}</div>`;
+      if (data.enDef) html += `<div class="wc-en">英文：${escapeHtml(data.enDef)}</div>`;
+      if (!data.zh && !data.enDef) html += `<div class="wc-en">暂无详细释义。</div>`;
+      html += `<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="wc-audio-btn" type="button" id="wcAudioBtn">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3z"></path><path d="M16 8a4 4 0 0 1 0 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+          朗读单词
+        </button>
+        <button class="wc-audio-btn" type="button" id="wcAddBtn" ${already ? "disabled" : ""}>${already ? "已在生词本" : "加入生词本"}</button>
+      </div>`;
+      wcBody.innerHTML = html;
+
+      const audioBtn = $("wcAudioBtn");
+      if (audioBtn) audioBtn.addEventListener("click", () => speakWord(data.word));
+      const addBtn = $("wcAddBtn");
+      if (addBtn && !already) {
+        addBtn.addEventListener("click", () => {
+          addToVocab(data);
+          addBtn.textContent = "已在生词本";
+          addBtn.disabled = true;
+        });
+      }
+    }
+
+    function positionCard(anchorEl) {
+      const rect = anchorEl.getBoundingClientRect();
+      const cardW = wordCard.offsetWidth;
+      const cardH = wordCard.offsetHeight;
+      const gap = 8;
+      let left = rect.left;
+      let top = rect.bottom + gap;
+      if (left + cardW > window.innerWidth - 12) left = window.innerWidth - cardW - 12;
+      if (left < 12) left = 12;
+      if (top + cardH > window.innerHeight - 12) { top = rect.top - cardH - gap; if (top < 12) top = 12; }
+      wordCard.style.left = `${left}px`;
+      wordCard.style.top = `${top}px`;
+    }
+
+    function showWordCard(word, anchorEl) {
+      wcWord.textContent = word;
+      wcPhonetic.textContent = "";
+      wcBody.innerHTML = `<div class="wc-loading">查询中…</div>`;
+      wordCard.hidden = false;
+      positionCard(anchorEl);
+      lookupWord(word).then((data) => {
+        if (wordCard.hidden) return;
+        renderWordCard(data);
+        positionCard(anchorEl);
+      });
+    }
+    function closeWordCard() { wordCard.hidden = true; }
+
+    function speakWord(text) {
+      if (!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "en-US"; u.rate = 0.9;
+      if (selectedVoice) u.voice = selectedVoice;
+      window.speechSynthesis.speak(u);
+    }
+
+    /* ============================================================
+       4. 生词本 & 历史记录
+       ============================================================ */
+    function updateVocabBadge() { vocabBadge.textContent = String(vocab.length); }
+    function updateHistoryBadge() { historyBadge.textContent = String(history.length); }
+
+    function addToVocab(data) {
+      const w = (data.word || "").toLowerCase().replace(/[^a-z'-]/g, "");
+      if (!w) return;
+      if (vocab.some((v) => v.word.toLowerCase() === w)) { setHint("该单词已在生词本"); return; }
+      vocab.unshift({ word: data.word, phonetic: data.phonetic || "", pos: data.pos || [], zh: data.zh || "", enDef: data.enDef || "", addedAt: Date.now() });
+      saveJSON(LS_VOCAB, vocab);
+      updateVocabBadge();
+      renderVocab();
+      setHint(`已加入生词本：${data.word}`);
+    }
+    function removeVocab(word) {
+      vocab = vocab.filter((v) => v.word.toLowerCase() !== word.toLowerCase());
+      saveJSON(LS_VOCAB, vocab);
+      updateVocabBadge();
+      renderVocab();
+    }
+    function exportVocab() {
+      const blob = new Blob([JSON.stringify(vocab, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "my-vocabulary.json";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function addHistory(text) {
+      const t = text.trim();
+      if (!t) return;
+      history = history.filter((h) => h.text !== t);
+      history.unshift({ text: t, addedAt: Date.now() });
+      if (history.length > 30) history = history.slice(0, 30);
+      saveJSON(LS_HISTORY, history);
+      updateHistoryBadge();
+    }
+    function removeHistory(item) {
+      history = history.filter((h) => h !== item);
+      saveJSON(LS_HISTORY, history);
+      updateHistoryBadge();
+      renderHistory();
+    }
+    function clearHistory() {
+      history = [];
+      saveJSON(LS_HISTORY, history);
+      updateHistoryBadge();
+      renderHistory();
+    }
+
+    function formatDate(ts) {
+      try { return new Date(ts).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }); }
+      catch (e) { return ""; }
+    }
+
+    function renderVocab() {
+      if (vocab.length === 0) {
+        vocabPane.innerHTML = '<div class="pane-empty">还没有生词。<br>点击文中的任意单词，选择「加入生词本」即可收藏。</div>';
+        return;
+      }
+      let html = '<div class="pane-toolbar"><button class="mini-btn" id="exportVocabBtn" type="button">导出生词本</button></div>';
+      vocabPane.innerHTML = html;
+      const toolbar = vocabPane.querySelector("#exportVocabBtn");
+      if (toolbar) toolbar.addEventListener("click", exportVocab);
+
+      vocab.forEach((v) => {
+        const posHtml = (v.pos && v.pos.length) ? v.pos.map((p) => `<span class="wc-pos">${escapeHtml(p)}</span>`).join("") : "";
+        const item = document.createElement("div");
+        item.className = "vocab-item";
+        item.innerHTML = `
+          <div class="vi-main"><span class="vi-word">${escapeHtml(v.word)}</span>${v.phonetic ? `<span class="vi-phon">${escapeHtml(v.phonetic)}</span>` : ""}</div>
+          <div class="vi-pos">${posHtml}</div>
+          ${v.zh ? `<div class="vi-zh">${escapeHtml(v.zh)}</div>` : ""}
+          ${v.enDef ? `<div class="vi-en">${escapeHtml(v.enDef)}</div>` : ""}
+          <div class="vi-actions">
+            <button class="mini-btn" data-act="speak" type="button">朗读</button>
+            <button class="mini-btn danger" data-act="remove" type="button">移除</button>
+          </div>`;
+        item.querySelector('[data-act="speak"]').addEventListener("click", () => speakWord(v.word));
+        item.querySelector('[data-act="remove"]').addEventListener("click", () => removeVocab(v.word));
+        vocabPane.appendChild(item);
+      });
+    }
+
+    function renderHistory() {
+      if (history.length === 0) {
+        historyPane.innerHTML = '<div class="pane-empty">还没有历史记录。<br>每次「生成学习视图」后，原文会自动保存在这里，方便回看。</div>';
+        return;
+      }
+      let html = '<div class="pane-toolbar"><button class="mini-btn danger" id="clearHistoryBtn" type="button">清空历史</button></div>';
+      historyPane.innerHTML = html;
+      const clearBtn = historyPane.querySelector("#clearHistoryBtn");
+      if (clearBtn) clearBtn.addEventListener("click", clearHistory);
+
+      history.forEach((h) => {
+        const snippet = h.text.replace(/\s+/g, " ");
+        const shown = snippet.length > 140 ? snippet.slice(0, 140) + "…" : snippet;
+        const item = document.createElement("div");
+        item.className = "hist-item";
+        item.innerHTML = `
+          <div class="hi-text">${escapeHtml(shown)}</div>
+          <div class="hi-meta">${formatDate(h.addedAt)} · ${h.text.length} 字符</div>
+          <div class="hi-actions">
+            <button class="mini-btn" data-act="load" type="button">载入</button>
+            <button class="mini-btn danger" data-act="remove" type="button">删除</button>
+          </div>`;
+        item.querySelector('[data-act="load"]').addEventListener("click", () => {
+          sourceText.value = h.text;
+          closePanel();
+          generateView();
+        });
+        item.querySelector('[data-act="remove"]').addEventListener("click", () => removeHistory(h));
+        historyPane.appendChild(item);
+      });
+    }
+
+    /* 侧边面板开关 */
+    function openPanel(tab) {
+      switchTab(tab);
+      sidePanel.hidden = false;
+      overlay.hidden = false;
+      requestAnimationFrame(() => { sidePanel.classList.add("open"); overlay.classList.add("open"); });
+    }
+    function closePanel() {
+      sidePanel.classList.remove("open");
+      overlay.classList.remove("open");
+      setTimeout(() => { sidePanel.hidden = true; overlay.hidden = true; }, 220);
+    }
+    function switchTab(tab) {
+      document.querySelectorAll(".sp-tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
+      vocabPane.hidden = tab !== "vocab";
+      historyPane.hidden = tab !== "history";
+      if (tab === "vocab") renderVocab(); else renderHistory();
+    }
+
+    /* ============================================================
+       5. 工具函数
+       ============================================================ */
+    function escapeHtml(str) {
+      return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+    function setHint(msg) {
+      inputHint.textContent = msg;
+      if (msg) { clearTimeout(setHint._t); setHint._t = setTimeout(() => { inputHint.textContent = ""; }, 4000); }
+    }
+
+    const EXAMPLE = `Sustainable development has become a central topic in global discussions. In addition to economic growth, governments and companies are paying more attention to environmental protection. As a result, many organizations now focus on reducing carbon emissions and promoting renewable energy. However, achieving real progress requires cooperation between the public and private sectors. In the long run, these efforts will make a difference for future generations.`;
+
+    /* ============================================================
+       6. 事件绑定
+       ============================================================ */
+    function generateView() {
+      const text = sourceText.value.trim();
+      if (!text) { setHint("请先粘贴英文文本。"); return; }
+      sentences = splitSentences(text).map((t) => ({ text: t }));
+      currentSentenceIndex = -1;
+      isPlaying = false; isPaused = false;
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      renderSentences();
+      updateProgress();
+      updateTransportUI();
+      translateAll();
+      addHistory(text);
+      setHint(`已生成 ${sentences.length} 个句子。`);
+    }
+
+    generateBtn.addEventListener("click", generateView);
+    exampleBtn.addEventListener("click", () => { sourceText.value = EXAMPLE; sourceText.focus(); });
+
+    toggleInputBtn.addEventListener("click", () => {
+      const collapsed = inputPanel.style.display === "none";
+      if (collapsed) { inputPanel.style.display = "block"; toggleInputBtn.textContent = "收起输入"; toggleInputBtn.setAttribute("aria-expanded", "true"); }
+      else { inputPanel.style.display = "none"; toggleInputBtn.textContent = "展开输入"; toggleInputBtn.setAttribute("aria-expanded", "false"); }
+    });
+
+    playBtn.addEventListener("click", startPlayback);
+    pauseBtn.addEventListener("click", pausePlayback);
+    stopBtn.addEventListener("click", stopPlayback);
+
+    rateSlider.addEventListener("input", () => { rateLabel.textContent = parseFloat(rateSlider.value).toFixed(1) + "x"; });
+    rateSlider.addEventListener("change", () => {
+      currentRate = parseFloat(rateSlider.value);
+      rateLabel.textContent = currentRate.toFixed(1) + "x";
+      reSpeakCurrent();
+    });
+
+    toggleTransBtn.addEventListener("click", () => {
+      showTranslations = !showTranslations;
+      sentences.forEach((s) => { if (s.translationEl) s.translationEl.style.display = showTranslations ? "block" : "none"; });
+      toggleTransBtn.textContent = showTranslations ? "隐藏翻译" : "显示翻译";
+    });
+
+    voiceSelect.addEventListener("change", () => pickVoiceByIndex(voiceSelect.value));
+
+    wordCardClose.addEventListener("click", closeWordCard);
+    document.addEventListener("click", (e) => { if (!wordCard.hidden && !wordCard.contains(e.target)) closeWordCard(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") { if (!wordCard.hidden) closeWordCard(); if (!sidePanel.hidden) closePanel(); if (!settingsModal.hidden) closeSettings(); } });
+
+    vocabBtn.addEventListener("click", () => openPanel("vocab"));
+    historyBtn.addEventListener("click", () => openPanel("history"));
+    sidePanelClose.addEventListener("click", closePanel);
+    overlay.addEventListener("click", closePanel);
+    document.querySelectorAll(".sp-tab").forEach((b) => b.addEventListener("click", () => switchTab(b.dataset.tab)));
+
+    /* 设置弹窗：DeepL 密钥 */
+    function openSettings() {
+      deeplKeyInput.value = deeplKey || "";
+      proxyTokenInput.value = proxyToken || "";
+      settingsStatus.textContent = "";
+      settingsStatus.className = "settings-status";
+      settingsModal.hidden = false;
+      requestAnimationFrame(() => settingsModal.classList.add("open"));
+      deeplKeyInput.focus();
+    }
+    function closeSettings() {
+      settingsModal.classList.remove("open");
+      setTimeout(() => { settingsModal.hidden = true; }, 180);
+    }
+    function updateTransSourceLabel() {
+      if (!transSourceLabel) return;
+      if (!deeplKey) { transSourceLabel.textContent = "翻译源：MyMemory"; return; }
+      transSourceLabel.textContent = deeplProxyBase ? "翻译源：DeepL（代理）" : "翻译源：DeepL（直连/CORS受限）";
+    }
+    function checkDeeplUsage() {
+      if (!deeplKey) { settingsStatus.textContent = "请先填写并保存密钥，再查询额度。"; settingsStatus.className = "settings-status err"; return; }
+      settingsStatus.textContent = "正在查询额度…";
+      settingsStatus.className = "settings-status";
+      const call = deeplProxyBase
+        ? fetch(deeplProxyBase + "/__deepl/usage?key=" + encodeURIComponent(deeplKey) + (proxyToken ? "&token=" + encodeURIComponent(proxyToken) : ""), { method: "GET" })
+            .then((res) => res.json().then((d) => { if (!res.ok) throw new Error(d.error || ("HTTP " + res.status)); return d; }))
+        : fetch("https://api-free.deepl.com/v2/usage", { method: "GET", headers: { "Authorization": "DeepL-Auth-Key " + deeplKey } });
+      call.then((d) => {
+          const used = d.character_count, lim = d.character_limit;
+          if (used == null || lim == null) throw new Error("无数据");
+          const pct = Math.round((used / lim) * 100);
+          settingsStatus.textContent = "本月已用 " + used.toLocaleString() + " / " + lim.toLocaleString() + " 字符（" + pct + "%）。";
+          settingsStatus.className = "settings-status ok";
+        })
+        .catch((e) => {
+          settingsStatus.textContent = "额度查询失败（" + (e && e.message ? e.message : "网络/CORS") + "）。";
+          settingsStatus.className = "settings-status err";
+        });
+    }
+    settingsBtn.addEventListener("click", openSettings);
+    settingsClose.addEventListener("click", closeSettings);
+    settingsModal.addEventListener("click", (e) => { if (e.target === settingsModal) closeSettings(); });
+    usageSettingsBtn.addEventListener("click", checkDeeplUsage);
+    clearSettingsBtn.addEventListener("click", () => {
+      deeplKey = "";
+      try { localStorage.removeItem(LS_DEEPL); } catch (e) {}
+      deeplKeyInput.value = "";
+      updateTransSourceLabel();
+      settingsStatus.textContent = "已清除密钥，翻译将使用 MyMemory。";
+      settingsStatus.className = "settings-status";
+    });
+    saveSettingsBtn.addEventListener("click", () => {
+      const key = deeplKeyInput.value.trim();
+      proxyToken = proxyTokenInput.value.trim();
+      try { localStorage.setItem(LS_PROXY_TOKEN, proxyToken); } catch (e) {}
+      if (!key) {
+        deeplKey = "";
+        try { localStorage.removeItem(LS_DEEPL); } catch (e) {}
+        updateTransSourceLabel();
+        settingsStatus.textContent = "未填写密钥，已恢复使用 MyMemory。";
+        settingsStatus.className = "settings-status";
+        return;
+      }
+      settingsStatus.textContent = "正在测试密钥…";
+      settingsStatus.className = "settings-status";
+      translateViaDeepl("test", key)
+        .then(() => {
+          deeplKey = key;
+          try { localStorage.setItem(LS_DEEPL, key); } catch (e) {}
+          updateTransSourceLabel();
+          settingsStatus.textContent = "已保存，DeepL 连接正常。";
+          settingsStatus.className = "settings-status ok";
+        })
+        .catch((e) => {
+          settingsStatus.textContent = "密钥测试失败（" + (e && e.message ? e.message : "网络/CORS 限制") + "）。DeepL 需通过 deepl_proxy.py 启动的页面才能直连；否则请改用 MyMemory。";
+          settingsStatus.className = "settings-status err";
+        });
+    });
+    updateTransSourceLabel();
+    detectDeeplProxy().then(updateTransSourceLabel);
+    window.addEventListener("scroll", () => { if (!wordCard.hidden) closeWordCard(); }, true);
+
+    /* 初始化 */
+    if (!window.speechSynthesis) setHint("提示：当前浏览器不支持语音合成，朗读功能将不可用。");
+    if (typeof window.speechSynthesis !== "undefined") { loadVoices(); window.speechSynthesis.onvoiceschanged = loadVoices; }
+    rateLabel.textContent = currentRate.toFixed(1) + "x";
+    updateTransportUI();
+    updateProgress();
+    updateVocabBadge();
+    updateHistoryBadge();
+  })();
+  </script>
+</body>
+</html>

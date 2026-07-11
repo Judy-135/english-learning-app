@@ -1,0 +1,11 @@
+# macOS 资源分叉 / 隐藏文件
+._*
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# 本地密钥/环境（不要提交）
+.env
+*.local
