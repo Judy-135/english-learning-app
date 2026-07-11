@@ -379,7 +379,7 @@
     let currentSentenceIndex = -1;
     let canceling = false;
     let voices = [];
-    let selectedVoice = null;
+    let selectedVoiceName = (localStorage.getItem("elapp_voice") || "");
 
     const wordCache = new Map();
     const sentenceCache = new Map();
@@ -640,9 +640,16 @@
     /* ============================================================
        2. 文本转语音（Web Speech API）
        ============================================================ */
+    function getResolvedVoice() {
+      // 每次朗读前按名字重新解析，避免移动端 voice 对象过期被引擎忽略（发音变机械）
+      if (!selectedVoiceName || !window.speechSynthesis) return null;
+      const vs = window.speechSynthesis.getVoices() || [];
+      return vs.find((v) => v.name === selectedVoiceName) || null;
+    }
+
     function loadVoices() {
-      const prevName = selectedVoice ? selectedVoice.name : null;
-      voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+      if (!window.speechSynthesis) return;
+      voices = window.speechSynthesis.getVoices() || [];
       voiceSelect.innerHTML = "";
       const enVoices = voices.filter((v) => v.lang && v.lang.toLowerCase().startsWith("en"));
       const list = enVoices.length ? enVoices : voices;
@@ -652,23 +659,42 @@
         opt.textContent = `${v.name} (${v.lang})`;
         voiceSelect.appendChild(opt);
       });
-      // 尽量保留用户此前选中的发音（避免移动端 voiceschanged 反复触发导致选择被重置）
-      let chosen = prevName ? list.find((v) => v.name === prevName) || null : null;
-      if (!chosen) {
-        chosen =
-          list.find((v) => /Google US English/i.test(v.name)) ||
-          list.find((v) => v.lang === "en-US") ||
-          list.find((v) => v.lang && v.lang.toLowerCase().startsWith("en")) ||
-          null;
+      // 选择优先级：用户已选（名字持久化）> Google US English > en-US > 任一英文
+      const g = list.find((v) => /Google US English/i.test(v.name));
+      const us = list.find((v) => v.lang === "en-US");
+      let chosenName = selectedVoiceName;
+      if (!chosenName || !list.some((v) => v.name === chosenName)) {
+        chosenName = (g && g.name) || (us && us.name) || (list[0] && list[0].name) || "";
       }
-      selectedVoice = chosen;
-      if (selectedVoice) voiceSelect.value = String(list.indexOf(selectedVoice));
+      selectedVoiceName = chosenName;
+      if (chosenName) {
+        const idx = list.findIndex((v) => v.name === chosenName);
+        if (idx >= 0) voiceSelect.value = String(idx);
+      }
+    }
+
+    // 移动端 getVoices() 常首次返回空，轮询直到拿到列表（最多 ~3s）
+    function ensureVoicesLoaded() {
+      if (!window.speechSynthesis) return;
+      loadVoices();
+      if (window.speechSynthesis.getVoices().length === 0) {
+        let tries = 0;
+        const t = setInterval(() => {
+          tries++;
+          loadVoices();
+          if (window.speechSynthesis.getVoices().length > 0 || tries > 30) clearInterval(t);
+        }, 100);
+      }
     }
 
     function pickVoiceByIndex(idx) {
       const enVoices = voices.filter((v) => v.lang && v.lang.toLowerCase().startsWith("en"));
       const list = enVoices.length ? enVoices : voices;
-      selectedVoice = list[Number(idx)] || null;
+      const v = list[Number(idx)];
+      if (v) {
+        selectedVoiceName = v.name;
+        localStorage.setItem("elapp_voice", v.name);
+      }
     }
 
     function speakSentence(i) {
@@ -680,10 +706,11 @@
       updateProgress();
 
       const u = new SpeechSynthesisUtterance(s.text);
-      u.lang = "en-US";
+      const v = getResolvedVoice();
+      if (v) { u.voice = v; u.lang = v.lang; }
+      else { u.lang = "en-US"; }
       u.rate = currentRate;
       u.pitch = 1;
-      if (selectedVoice) u.voice = selectedVoice;
 
       u.onboundary = (e) => { if (typeof e.charIndex === "number") highlightWord(i, e.charIndex); };
       u.onend = () => {
@@ -704,6 +731,7 @@
       if (sentences.length === 0) { setHint("请先生成学习视图。"); return; }
       if (isPlaying && !isPaused) return;
       if (isPaused) { isPaused = false; window.speechSynthesis.resume(); updateTransportUI(); return; }
+      window.speechSynthesis.cancel(); // iOS：清掉残留队列，避免首句不响/音色异常
       isPlaying = true;
       updateTransportUI();
       const start = currentSentenceIndex >= 0 ? currentSentenceIndex : 0;
@@ -968,8 +996,9 @@
       if (!window.speechSynthesis) return;
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = "en-US"; u.rate = 0.9;
-      if (selectedVoice) u.voice = selectedVoice;
+      const v = getResolvedVoice();
+      if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = "en-US"; }
+      u.rate = 0.9;
       window.speechSynthesis.speak(u);
     }
 
@@ -1291,12 +1320,10 @@
     /* 初始化 */
     if (!window.speechSynthesis) setHint("提示：当前浏览器不支持语音合成，朗读功能将不可用。");
     if (typeof window.speechSynthesis !== "undefined") {
-      loadVoices();
+      ensureVoicesLoaded();
       window.speechSynthesis.onvoiceschanged = loadVoices;
-      // iOS / 部分移动端浏览器嗓音列表延迟加载，延时再取一次
-      setTimeout(loadVoices, 250);
       // 首次用户交互后再取一次（某些移动端需在手势后才能拿到完整嗓音列表）
-      document.addEventListener("click", () => loadVoices(), { once: true });
+      document.addEventListener("click", () => ensureVoicesLoaded(), { once: true });
     }
     rateLabel.textContent = currentRate.toFixed(1) + "x";
     updateTransportUI();
