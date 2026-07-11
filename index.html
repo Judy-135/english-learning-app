@@ -29,7 +29,7 @@
     body { display: flex; flex-direction: column; min-height: 100vh; }
 
     /* Header */
-    .app-header { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 20; }
+    .app-header { background: var(--surface); border-bottom: 1px solid var(--border); }
     .header-inner { max-width: 1080px; margin: 0 auto; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
     .brand { display: flex; align-items: center; gap: 12px; }
     .brand-mark { width: 40px; height: 40px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); border-radius: 12px; }
@@ -60,7 +60,7 @@
     .ghost-btn:focus-visible { outline: 3px solid rgba(79,70,229,.35); outline-offset: 2px; }
 
     /* Controls */
-    .controls { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 18px; flex-wrap: wrap; position: sticky; top: 69px; z-index: 15; }
+    .controls { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 18px; flex-wrap: wrap; position: sticky; top: 0; z-index: 15; }
     .transport { display: flex; gap: 8px; }
     .ctrl-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: transform .12s ease, background .15s ease, opacity .15s ease; }
     .ctrl-btn:hover:not(:disabled) { background: #e7eaf3; }
@@ -169,9 +169,10 @@
 
     /* Responsive */
     @media (max-width: 720px) {
-      .controls { top: 64px; gap: 12px; }
+      .controls { top: 0; gap: 12px; }
       .right-controls { margin-left: 0; width: 100%; justify-content: space-between; }
       .rate-slider { width: 110px; }
+      .voice-select { font-size: 16px; padding: 8px 10px; }
       .sentence-original { font-size: 16.5px; }
       .reading-area { padding: 16px; }
     }
@@ -634,6 +635,7 @@
        2. 文本转语音（Web Speech API）
        ============================================================ */
     function loadVoices() {
+      const prevName = selectedVoice ? selectedVoice.name : null;
       voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
       voiceSelect.innerHTML = "";
       const enVoices = voices.filter((v) => v.lang && v.lang.toLowerCase().startsWith("en"));
@@ -644,11 +646,16 @@
         opt.textContent = `${v.name} (${v.lang})`;
         voiceSelect.appendChild(opt);
       });
-      const preferred =
-        list.find((v) => /Google US English/i.test(v.name)) ||
-        list.find((v) => v.lang === "en-US") ||
-        list.find((v) => v.lang && v.lang.toLowerCase().startsWith("en"));
-      selectedVoice = preferred || null;
+      // 尽量保留用户此前选中的发音（避免移动端 voiceschanged 反复触发导致选择被重置）
+      let chosen = prevName ? list.find((v) => v.name === prevName) || null : null;
+      if (!chosen) {
+        chosen =
+          list.find((v) => /Google US English/i.test(v.name)) ||
+          list.find((v) => v.lang === "en-US") ||
+          list.find((v) => v.lang && v.lang.toLowerCase().startsWith("en")) ||
+          null;
+      }
+      selectedVoice = chosen;
       if (selectedVoice) voiceSelect.value = String(list.indexOf(selectedVoice));
     }
 
@@ -1256,7 +1263,14 @@
 
     /* 初始化 */
     if (!window.speechSynthesis) setHint("提示：当前浏览器不支持语音合成，朗读功能将不可用。");
-    if (typeof window.speechSynthesis !== "undefined") { loadVoices(); window.speechSynthesis.onvoiceschanged = loadVoices; }
+    if (typeof window.speechSynthesis !== "undefined") {
+      loadVoices();
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+      // iOS / 部分移动端浏览器嗓音列表延迟加载，延时再取一次
+      setTimeout(loadVoices, 250);
+      // 首次用户交互后再取一次（某些移动端需在手势后才能拿到完整嗓音列表）
+      document.addEventListener("click", () => loadVoices(), { once: true });
+    }
     rateLabel.textContent = currentRate.toFixed(1) + "x";
     updateTransportUI();
     updateProgress();
