@@ -853,7 +853,12 @@
     function doTranslate(text) {
       if (deeplKey) {
         return translateViaDeepl(text).catch((e) => {
-          console.warn("DeepL 翻译失败，回退到 MyMemory：", e && e.message);
+          const msg = (e && e.message) || "";
+          if (deeplProxyBase && /401|proxy token|invalid.*token/i.test(msg)) {
+            const lbl = document.getElementById("transSourceLabel");
+            if (lbl) lbl.textContent = "⚠ DeepL 代理 token 可能有误（已回退 MyMemory）";
+          }
+          console.warn("DeepL 翻译失败，回退到 MyMemory：", msg);
           return translateViaMyMemory(text);
         });
       }
@@ -1233,7 +1238,15 @@
           settingsStatus.className = "settings-status ok";
         })
         .catch((e) => {
-          settingsStatus.textContent = "密钥测试失败（" + (e && e.message ? e.message : "网络/CORS 限制") + "）。DeepL 需通过 deepl_proxy.py 启动的页面才能直连；否则请改用 MyMemory。";
+          const msg = (e && e.message) || "";
+          const isProxyAuth = /token|401|unauthorized|forbidden/i.test(msg);
+          let hint = "DeepL 连接失败。";
+          if (deeplProxyBase) {
+            hint += isProxyAuth ? "请到设置确认『代理访问 Token』与服务器 DEEPL_PROXY_TOKEN 一致。" : "请确认 DeepL 密钥有效且代理运行正常。";
+          } else {
+            hint += "当前页面未检测到代理；DeepL 需通过代理（本地 deepl_proxy.py 或部署版）才能访问，否则请改用 MyMemory。";
+          }
+          settingsStatus.textContent = hint + (msg ? "（" + msg + "）" : "");
           settingsStatus.className = "settings-status err";
         });
     });
