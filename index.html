@@ -88,6 +88,15 @@
     .sentence-block.playing { background: var(--playing-bg); border-left-color: var(--accent); }
     .sentence-original { font-size: 18px; line-height: 1.9; color: var(--text); word-break: break-word; }
     .sentence-translation { margin-top: 8px; font-size: 14.5px; line-height: 1.7; color: var(--text-muted); border-top: 1px dashed var(--border); padding-top: 8px; }
+    .sentence-row { display: flex; gap: 10px; align-items: flex-start; }
+    .sentence-content { flex: 1 1 auto; min-width: 0; }
+    .sentence-audio { flex: 0 0 auto; width: 30px; height: 30px; margin-top: 2px; border: 1px solid var(--border); background: var(--surface); color: var(--accent); border-radius: 50%; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: background .15s ease, border-color .15s ease, transform .1s ease, color .15s ease; }
+    .sentence-audio:hover { background: var(--accent-soft); }
+    .sentence-audio:active { transform: scale(0.92); }
+    .sentence-audio.is-active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .sentence-audio.is-paused { background: var(--accent-soft); color: var(--accent); }
+    .sentence-block.jumped { animation: sentenceJump .9s ease; }
+    @keyframes sentenceJump { 0% { background: var(--accent-soft); } 100% { background: transparent; } }
 
     /* word & phrase styling */
     .word { cursor: pointer; border-radius: 4px; padding: 0 1px; transition: background .12s ease, color .12s ease; }
@@ -655,6 +664,21 @@
         block.className = "sentence-block";
         block.dataset.index = String(i);
 
+        const row = document.createElement("div");
+        row.className = "sentence-row";
+
+        // 每句独立的播放/暂停按钮
+        const audio = document.createElement("button");
+        audio.type = "button";
+        audio.className = "sentence-audio";
+        audio.innerHTML =
+          '<svg class="icon-play" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>' +
+          '<svg class="icon-pause" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true" style="display:none"><path d="M6 5h4v14H6zM14 5h4v14h-4z"></path></svg>';
+        audio.addEventListener("click", (ev) => { ev.stopPropagation(); onSentenceAudioClick(i); });
+
+        const content = document.createElement("div");
+        content.className = "sentence-content";
+
         const original = document.createElement("div");
         original.className = "sentence-original";
         original.appendChild(buildSentenceDOM(s));
@@ -664,10 +688,20 @@
         trans.style.display = showTranslations ? "block" : "none";
         trans.textContent = "翻译加载中…";
 
+        content.appendChild(original);
+        content.appendChild(trans);
+        row.appendChild(audio);
+        row.appendChild(content);
+        block.appendChild(row);
+
         s.translationEl = trans;
         s.blockEl = block;
-        block.appendChild(original);
-        block.appendChild(trans);
+        s.audioBtn = audio;
+        // 点击句子正文（非单词、非音频按钮）跳转到该句内容并居中
+        block.addEventListener("click", (e) => {
+          if (e.target.closest(".word") || e.target.closest(".sentence-audio")) return;
+          scrollToSentence(i);
+        });
         sentencesEl.appendChild(block);
       });
     }
@@ -846,6 +880,46 @@
         const repeatInfo = repeatCount > 1 ? ` (第${currentRepeat}/${repeatCount}遍)` : "";
         progressLabel.textContent = `${cur} / ${sentences.length}${repeatInfo}`;
       }
+      updateSentenceAudioUI();
+    }
+    /* 逐句独立播放/暂停 + 点击句子跳转 */
+    function updateSentenceAudioUI() {
+      sentences.forEach((s, idx) => {
+        if (!s.audioBtn) return;
+        const active = idx === currentSentenceIndex;
+        const playingThis = active && isPlaying && !isPaused;
+        s.audioBtn.classList.toggle("is-active", active);
+        s.audioBtn.classList.toggle("is-paused", active && isPaused);
+        const playI = s.audioBtn.querySelector(".icon-play");
+        const pauseI = s.audioBtn.querySelector(".icon-pause");
+        if (playI) playI.style.display = playingThis ? "none" : "block";
+        if (pauseI) pauseI.style.display = playingThis ? "block" : "none";
+        s.audioBtn.setAttribute("aria-label", playingThis ? "暂停此句" : "播放此句");
+      });
+    }
+    function onSentenceAudioClick(i) {
+      if (i < 0 || i >= sentences.length) return;
+      if (currentSentenceIndex === i && isPlaying) {
+        if (isPaused) startPlayback(); // 本句已暂停 → 恢复
+        else pausePlayback();          // 本句正在播放 → 暂停
+      } else {
+        playFromSentence(i);           // 跳转到该句并播放
+      }
+    }
+    function playFromSentence(i) {
+      if (!window.speechSynthesis) { setHint("当前浏览器不支持语音合成（Web Speech API）。"); return; }
+      if (i < 0 || i >= sentences.length) return;
+      window.speechSynthesis.cancel(); // 切走当前句（同时清空 iOS 残留队列）
+      isPlaying = true; isPaused = false; currentRepeat = 1;
+      updateTransportUI();
+      speakSentence(i);
+    }
+    function scrollToSentence(i) {
+      const s = sentences[i];
+      if (!s || !s.blockEl) return;
+      s.blockEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      s.blockEl.classList.add("jumped");
+      setTimeout(() => { if (s.blockEl) s.blockEl.classList.remove("jumped"); }, 900);
     }
     function updateTransportUI() {
       const hasText = sentences.length > 0;
@@ -857,6 +931,7 @@
       const iconResume = playBtn.querySelector(".icon-resume");
       if (isPaused) { label.textContent = "继续"; iconPlay.style.display = "none"; iconResume.style.display = "block"; playBtn.setAttribute("aria-label", "继续"); }
       else { label.textContent = "播放"; iconPlay.style.display = "block"; iconResume.style.display = "none"; playBtn.setAttribute("aria-label", "播放"); }
+      updateSentenceAudioUI();
     }
 
     /* ============================================================

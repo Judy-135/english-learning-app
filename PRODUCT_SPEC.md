@@ -53,11 +53,13 @@
 ### 2.3 朗读（Web Speech API）
 | 功能 | 行为 | 代码锚点 |
 |---|---|---|
-| 播放 | 从当前句（或第 0 句）开始逐句朗读 | `startPlayback()` L729 / `speakSentence(i)` L700 |
-| 暂停/继续 | `speechSynthesis.pause()/resume()`，按钮文案在「播放/继续」间切换 | `pausePlayback()` L740, `updateTransportUI()` L793 |
-| 停止 | `cancel()` 并清空高亮、进度归零 | `stopPlayback()` L747 |
-| 语速 | 滑块 `0.5x–2.0x`（步进 0.1），实时标签；变更后重读当前句 | `rateSlider` L1887, `reSpeakCurrent()` L761 |
+| 播放 | 从当前句（或第 0 句）开始逐句朗读 | `startPlayback()` / `speakSentence(i)` |
+| 暂停/继续 | `speechSynthesis.pause()/resume()`，按钮文案在「播放/继续」间切换 | `pausePlayback()`, `updateTransportUI()` |
+| 停止 | `cancel()` 并清空高亮、进度归零 | `stopPlayback()` |
+| 语速 | 滑块 `0.5x–2.0x`（步进 0.1），实时标签；变更后重读当前句 | `rateSlider`, `reSpeakCurrent()` |
 | **逐句重复** | 控制栏「重复」下拉选 ×1/×2/×3/×5：每句朗读达到设定遍数后再进下一句，重复间留 `REPEAT_GAP_MS=350ms` 停顿；进度标签显示「(第2/3遍)」 | `repeatCount`/`currentRepeat` 状态变量；`speakSentence` 的 `onend` 重播逻辑 |
+| **每句独立播放/暂停** | 每句左侧有圆形 ▶/⏸ 按钮：点本句按钮→若正在播放本句则暂停、若本句已暂停则恢复、若点的是另一句则**跳转并从该句开始播放**（沿用全局重复次数）；按钮随状态高亮 | `renderSentences()` 内生成 `.sentence-audio`；`onSentenceAudioClick()`、`playFromSentence()`、`updateSentenceAudioUI()` |
+| **点击句子跳转** | 点击句子正文（非单词、非音频按钮）平滑滚动并居中到该句，附带短暂高亮动画 | `scrollToSentence()`；`.sentence-block.jumped` + `@keyframes sentenceJump` |
 | 发音人选择 | 下拉 `#voiceSelect` 列出英文嗓音；选择持久化到 localStorage | `loadVoices()` L650, `pickVoiceByIndex()` L690 |
 | 单句/单词朗读 | 点单词卡片「朗读单词」、生词本「朗读」，均用 `speakWord()` L995 | L955, L1086 |
 | 逐词高亮 | `onboundary` 事件按 `charIndex` 给当前词加 `.speaking`（**见 §6 限制**） | `highlightWord()` L776 |
@@ -153,6 +155,7 @@
 │   └─ 阅读区 (.reading-area)
 │       ├─ 空状态 (.empty-state)
 │       └─ 句子列表 (.sentences) → 每句 .sentence-block(.playing)
+│            └─ .sentence-row → [▶/⏸ .sentence-audio] + .sentence-content(.sentence-original/.sentence-translation)
 │           ├─ .sentence-original（单词 span：.word / .word.phrase / .word.speaking）
 │           └─ .sentence-translation
 ├─ 单词卡片 (.word-card, fixed 定位, 跟随锚点词)
