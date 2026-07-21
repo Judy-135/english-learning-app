@@ -179,6 +179,24 @@
     @media (prefers-reduced-motion: reduce) {
       * { animation: none !important; transition: none !important; }
     }
+
+    /* 重复播放控制 */
+    .repeat-control { display: flex; align-items: center; gap: 8px; }
+    .repeat-select {
+      appearance: none; -webkit-appearance: none;
+      border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+      border-radius: 10px; padding: 6px 24px 6px 10px; font-size: 14px; cursor: pointer;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");
+      background-repeat: no-repeat; background-position: right 8px center;
+    }
+    .repeat-select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .upload-btn { cursor: pointer; user-select: none; }
+    .upload-btn input { display: none; }
+
+    @media (max-width: 720px) {
+      .repeat-control .field-label { font-size: 13px; }
+      .repeat-select { font-size: 16px; padding: 6px 26px 6px 10px; }
+    }
   </style>
 </head>
 <body>
@@ -215,6 +233,8 @@
       <div class="input-actions">
         <button id="generateBtn" class="primary-btn" type="button">生成学习视图</button>
         <button id="exampleBtn" class="ghost-btn" type="button">填入示例</button>
+        <label id="uploadBtn" class="ghost-btn upload-btn" for="imageInput" title="上传图片自动识别英文文字" aria-label="上传图片识别文字">📷 上传图片</label>
+        <input id="imageInput" type="file" accept="image/*" hidden />
         <span id="inputHint" class="input-hint" role="status" aria-live="polite"></span>
       </div>
     </section>
@@ -241,6 +261,16 @@
         <label for="rateSlider" class="field-label">语速</label>
         <input id="rateSlider" class="rate-slider" type="range" min="0.5" max="2" step="0.1" value="1" />
         <span id="rateLabel" class="rate-label">1.0x</span>
+      </div>
+
+      <div class="repeat-control">
+        <label for="repeatSelect" class="field-label">重复</label>
+        <select id="repeatSelect" class="repeat-select" aria-label="每句重复次数">
+          <option value="1">×1</option>
+          <option value="2">×2</option>
+          <option value="3">×3</option>
+          <option value="5">×5</option>
+        </select>
       </div>
 
       <div class="right-controls">
@@ -332,6 +362,7 @@
     const sourceText = $("sourceText");
     const generateBtn = $("generateBtn");
     const exampleBtn = $("exampleBtn");
+    const imageInput = $("imageInput");
     const inputHint = $("inputHint");
     const inputPanel = $("inputPanel");
     const toggleInputBtn = $("toggleInputBtn");
@@ -340,6 +371,7 @@
     const stopBtn = $("stopBtn");
     const rateSlider = $("rateSlider");
     const rateLabel = $("rateLabel");
+    const repeatSelect = $("repeatSelect");
     const toggleTransBtn = $("toggleTransBtn");
     const voiceSelect = $("voiceSelect");
     const progressLabel = $("progressLabel");
@@ -380,6 +412,9 @@
     let canceling = false;
     let voices = [];
     let selectedVoiceName = (localStorage.getItem("elapp_voice") || "");
+    let repeatCount = 1; // 每句重复次数（×1/×2/×3/×5）
+    let currentRepeat = 1; // 当前句已播放遍数
+    const REPEAT_GAP_MS = 350; // 同句重复之间的短暂停顿，避免连成一片
 
     const wordCache = new Map();
     const sentenceCache = new Map();
@@ -717,11 +752,28 @@
         if (canceling) return;
         if (!isPlaying) return;
         clearWordHighlight(i);
-        speakSentence(i + 1);
+        // 逐句重复：当前句未播够遍数则重播本句，否则前进到下一句
+        if (currentRepeat < repeatCount) {
+          currentRepeat++;
+          updateProgress();
+          setTimeout(() => { if (isPlaying && !canceling) speakSentence(i); }, REPEAT_GAP_MS);
+        } else {
+          currentRepeat = 1;
+          speakSentence(i + 1);
+        }
       };
       u.onerror = (e) => {
         if (e && e.error === "interrupted") return;
-        if (isPlaying && !canceling) { clearWordHighlight(i); speakSentence(i + 1); }
+        if (isPlaying && !canceling) {
+          clearWordHighlight(i);
+          if (currentRepeat < repeatCount) {
+            currentRepeat++;
+            setTimeout(() => { if (isPlaying && !canceling) speakSentence(i); }, REPEAT_GAP_MS);
+          } else {
+            currentRepeat = 1;
+            speakSentence(i + 1);
+          }
+        }
       };
       window.speechSynthesis.speak(u);
     }
@@ -733,6 +785,7 @@
       if (isPaused) { isPaused = false; window.speechSynthesis.resume(); updateTransportUI(); return; }
       window.speechSynthesis.cancel(); // iOS：清掉残留队列，避免首句不响/音色异常
       isPlaying = true;
+      currentRepeat = 1;
       updateTransportUI();
       const start = currentSentenceIndex >= 0 ? currentSentenceIndex : 0;
       speakSentence(start);
@@ -788,7 +841,11 @@
     }
     function updateProgress() {
       if (sentences.length === 0) progressLabel.textContent = "— / —";
-      else { const cur = currentSentenceIndex >= 0 ? currentSentenceIndex + 1 : 0; progressLabel.textContent = `${cur} / ${sentences.length}`; }
+      else {
+        const cur = currentSentenceIndex >= 0 ? currentSentenceIndex + 1 : 0;
+        const repeatInfo = repeatCount > 1 ? ` (第${currentRepeat}/${repeatCount}遍)` : "";
+        progressLabel.textContent = `${cur} / ${sentences.length}${repeatInfo}`;
+      }
     }
     function updateTransportUI() {
       const hasText = sentences.length > 0;
@@ -1154,6 +1211,83 @@
     const EXAMPLE = `Sustainable development has become a central topic in global discussions. In addition to economic growth, governments and companies are paying more attention to environmental protection. As a result, many organizations now focus on reducing carbon emissions and promoting renewable energy. However, achieving real progress requires cooperation between the public and private sectors. In the long run, these efforts will make a difference for future generations.`;
 
     /* ============================================================
+       0.5 图片 OCR（Tesseract.js，按需从 CDN 加载，仅英文）
+       ============================================================ */
+    let tesseractPromise = null;
+    function ensureTesseract() {
+      if (window.Tesseract) return Promise.resolve(window.Tesseract);
+      if (tesseractPromise) return tesseractPromise;
+      tesseractPromise = new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+        s.onload = () => (window.Tesseract ? resolve(window.Tesseract) : reject(new Error("Tesseract.js 加载异常")));
+        s.onerror = () => reject(new Error("Tesseract.js 加载失败，请检查网络后重试"));
+        document.head.appendChild(s);
+      });
+      return tesseractPromise;
+    }
+
+    // 从 Tesseract 的分块结果重建文本，尽量保留「行」与「段落」结构
+    function reconstructOcrText(data) {
+      const lines = [];
+      const blocks = data && data.blocks ? data.blocks : [];
+      for (const b of blocks) {
+        const paras = b.paragraphs || [];
+        for (const p of paras) {
+          const ls = p.lines || [];
+          for (const l of ls) {
+            const text = (l.words || []).map((w) => w.text).join(" ").trim();
+            if (!text) continue;
+            const bb = l.bbox || {};
+            const y0 = bb.y0 != null ? bb.y0 : (bb.top != null ? bb.top : 0);
+            const h = bb.height != null ? bb.height : (bb.y1 != null && bb.y0 != null ? bb.y1 - bb.y0 : 0);
+            lines.push({ text, y0, h });
+          }
+        }
+      }
+      if (lines.length === 0) return (data && data.text ? data.text : "").trim();
+      lines.sort((a, b) => a.y0 - b.y0);
+      const out = [];
+      let prevBottom = null, prevH = 0;
+      for (const l of lines) {
+        if (prevBottom != null) {
+          const gap = l.y0 - prevBottom;
+          if (gap > prevH * 1.3) out.push(""); // 行间距明显大于行高 → 视为段落分隔
+        }
+        out.push(l.text);
+        prevBottom = l.y0 + (l.h || 0);
+        prevH = l.h || prevH;
+      }
+      return out.join("\n");
+    }
+
+    async function handleImageOCR(file) {
+      if (!file) return;
+      if (!/^image\//.test(file.type)) { setHint("请选择图片文件（PNG/JPG 等）。"); return; }
+      setHint("正在加载识别引擎…");
+      let T;
+      try { T = await ensureTesseract(); }
+      catch (e) { setHint(e.message || "识别引擎加载失败"); return; }
+
+      setHint("识别中 0%…");
+      try {
+        const result = await T.recognize(file, "eng", {
+          logger: (m) => {
+            if (m && m.status === "recognizing text") setHint("识别中 " + Math.round((m.progress || 0) * 100) + "%…");
+          },
+        });
+        const text = reconstructOcrText(result.data);
+        if (!text.trim()) { setHint("未能识别到文字，请换一张更清晰的图片。"); return; }
+        sourceText.value = text;
+        const conf = Math.round(result.data && result.data.confidence ? result.data.confidence : 0);
+        generateView();
+        setHint("识别完成（置信度约 " + conf + "%）。OCR 可能有误差，可直接在上方文本框修改后重新点「生成学习视图」。");
+      } catch (e) {
+        setHint("识别失败：" + (e && e.message ? e.message : e));
+      }
+    }
+
+    /* ============================================================
        6. 事件绑定
        ============================================================ */
     function generateView() {
@@ -1173,6 +1307,15 @@
 
     generateBtn.addEventListener("click", generateView);
     exampleBtn.addEventListener("click", () => { sourceText.value = EXAMPLE; sourceText.focus(); });
+    imageInput.addEventListener("change", (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (f) handleImageOCR(f);
+      e.target.value = ""; // 允许重复选择同一张图片
+    });
+    repeatSelect.addEventListener("change", () => {
+      repeatCount = parseInt(repeatSelect.value, 10) || 1;
+      updateProgress();
+    });
 
     toggleInputBtn.addEventListener("click", () => {
       const collapsed = inputPanel.style.display === "none";
