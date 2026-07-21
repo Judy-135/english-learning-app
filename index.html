@@ -137,27 +137,7 @@
     .sp-close { width: 30px; height: 30px; border: none; background: var(--surface-2); border-radius: 8px; cursor: pointer; display: grid; place-items: center; color: var(--text-muted); }
     .sp-close:hover { background: #e7eaf3; color: var(--text); }
     .sp-body { flex: 1; overflow-y: auto; padding: 14px 16px; }
-
-    /* Settings modal */
     .trans-source { font-size: 12.5px; color: var(--text-muted); background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
-    .icon-btn { display: inline-flex; align-items: center; justify-content: center; padding: 9px; }
-    .modal { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 20px; background: rgba(17, 20, 30, .45); opacity: 0; transition: opacity .18s ease; }
-    .modal.open { opacity: 1; }
-    .modal[hidden] { display: none; }
-    .modal-card { width: 440px; max-width: 100%; background: var(--surface); border-radius: var(--radius); box-shadow: 0 24px 60px rgba(31, 36, 48, .25); padding: 20px 22px 22px; transform: translateY(8px); transition: transform .18s ease; }
-    .modal.open .modal-card { transform: translateY(0); }
-    .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-    .modal-head h2 { margin: 0; font-size: 17px; }
-    .modal-body { display: flex; flex-direction: column; gap: 8px; }
-    .settings-desc { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--text-muted); }
-    .settings-desc strong { color: var(--text); }
-    .key-input { width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 14px; color: var(--text); background: var(--surface-2); transition: border-color .15s ease, box-shadow .15s ease; }
-    .key-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); background: var(--surface); }
-    .settings-help { margin: 0; font-size: 12px; line-height: 1.55; color: var(--text-muted); }
-    .modal-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
-    .settings-status { margin: 6px 0 0; font-size: 13px; line-height: 1.5; min-height: 18px; }
-    .settings-status.ok { color: #15803d; }
-    .settings-status.err { color: var(--danger); }
     .sp-pane { display: flex; flex-direction: column; gap: 10px; }
     .pane-empty { color: var(--text-muted); font-size: 13.5px; line-height: 1.7; text-align: center; padding: 40px 16px; }
     .pane-toolbar { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 2px; }
@@ -226,9 +206,6 @@
       <div class="header-actions">
         <button id="vocabBtn" class="ghost-btn" type="button" aria-haspopup="dialog">生词本<span id="vocabBadge" class="badge">0</span></button>
         <button id="historyBtn" class="ghost-btn" type="button" aria-haspopup="dialog">历史记录<span id="historyBadge" class="badge">0</span></button>
-        <button id="settingsBtn" class="ghost-btn icon-btn" type="button" aria-haspopup="dialog" aria-label="翻译设置" title="翻译设置">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-        </button>
         <button id="toggleInputBtn" class="ghost-btn" type="button" aria-expanded="true" aria-controls="inputPanel">收起输入</button>
       </div>
     </div>
@@ -335,33 +312,6 @@
     </div>
   </aside>
 
-  <!-- 设置弹窗：DeepL 翻译密钥 -->
-  <div id="settingsModal" class="modal" role="dialog" aria-modal="true" aria-label="翻译设置" hidden>
-    <div class="modal-card">
-      <div class="modal-head">
-        <h2>翻译设置</h2>
-        <button id="settingsClose" class="sp-close" type="button" aria-label="关闭">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>
-        </button>
-      </div>
-      <div class="modal-body">
-        <p class="settings-desc">使用 <strong>DeepL 免费 API</strong> 可获得更高质量的翻译，免费额度 50 万字符/月。需到 DeepL 官网注册获取 API 密钥。</p>
-        <label for="deeplKey" class="field-label">DeepL 免费 API 密钥</label>
-        <input id="deeplKey" class="key-input" type="password" placeholder="粘贴以 :fx 结尾的免费密钥" autocomplete="off" spellcheck="false" />
-        <p class="settings-help" id="deeplKeyHelp">密钥仅保存在本浏览器（localStorage），不会上传至任何服务器。留空则使用默认免费翻译 MyMemory。</p>
-        <label for="proxyToken" class="field-label">代理访问 Token（仅部署到公网时需要）</label>
-        <input id="proxyToken" class="key-input" type="password" placeholder="本地使用可留空；需与服务器 DEEPL_PROXY_TOKEN 一致" autocomplete="off" spellcheck="false" />
-        <p class="settings-help">部署到 CloudStudio 等公网环境时，服务器需设置环境变量 <code>DEEPL_PROXY_TOKEN</code>，此处填入相同的值，否则代理会拒绝翻译请求（防止他人盗用你的 DeepL 额度）。</p>
-        <div class="modal-actions">
-          <button id="saveSettingsBtn" class="primary-btn" type="button">保存并测试</button>
-          <button id="clearSettingsBtn" class="ghost-btn" type="button">清除密钥</button>
-          <button id="usageSettingsBtn" class="ghost-btn" type="button">查询额度</button>
-        </div>
-        <p id="settingsStatus" class="settings-status" role="status" aria-live="polite"></p>
-      </div>
-    </div>
-  </div>
-
   <script>
   (function () {
     "use strict";
@@ -401,15 +351,6 @@
     const vocabPane = $("vocabPane");
     const historyPane = $("historyPane");
     const transSourceLabel = $("transSourceLabel");
-    const settingsBtn = $("settingsBtn");
-    const settingsModal = $("settingsModal");
-    const settingsClose = $("settingsClose");
-    const deeplKeyInput = $("deeplKey");
-    const proxyTokenInput = $("proxyToken");
-    const saveSettingsBtn = $("saveSettingsBtn");
-    const clearSettingsBtn = $("clearSettingsBtn");
-    const usageSettingsBtn = $("usageSettingsBtn");
-    const settingsStatus = $("settingsStatus");
 
     /* ---------------- State ---------------- */
     let sentences = [];
@@ -435,25 +376,6 @@
     function saveJSON(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
     let vocab = loadJSON(LS_VOCAB, []);
     let history = loadJSON(LS_HISTORY, []);
-
-    /* DeepL 免费 API 密钥（本地保存，不写死在代码里） */
-    const LS_DEEPL = "elapp_deepl_key";
-    const LS_PROXY_TOKEN = "elapp_proxy_token";
-    let deeplKey = (function () { try { return localStorage.getItem(LS_DEEPL) || ""; } catch (e) { return ""; } })();
-    let proxyToken = (function () { try { return localStorage.getItem(LS_PROXY_TOKEN) || ""; } catch (e) { return ""; } })();
-    let deeplProxyBase = null; // 同域 DeepL 代理基地址，加载时自动检测
-    let serverHasDeeplKey = false; // 服务器是否配置了 DEEPL_API_KEY（网页可免填 DeepL 密钥）
-    function detectDeeplProxy() {
-      return fetch("/__deepl/health", { method: "GET", cache: "no-store" })
-        .then((r) => r.json())
-        .then((d) => {
-          const ok = !!(d && d.ok);
-          deeplProxyBase = ok ? location.origin : null;
-          serverHasDeeplKey = !!(d && d.server_has_key);
-          return ok;
-        })
-        .catch(() => { deeplProxyBase = null; serverHasDeeplKey = false; return false; });
-    }
 
     /* ---------------- 常用短语词库 ---------------- */
     const PHRASES = [
@@ -975,7 +897,7 @@
         });
     }
 
-    /* ---- 翻译：DeepL 免费 API 优先，MyMemory 兜底 ---- */
+    /* ---- 翻译：MyMemory 免费 API（浏览器直连，无需代理） ---- */
     function translateViaMyMemory(text) {
       return fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|zh-CN`)
         .then((res) => res.json())
@@ -987,57 +909,7 @@
         });
     }
 
-    function translateViaDeepl(text, keyOverride) {
-      const key = keyOverride || deeplKey;
-      if (deeplProxyBase) {
-        // 走同域代理，绕开浏览器 CORS 限制（服务器可能已配置 DEEPL_API_KEY，可不传 key）
-        const hdrs = { "Content-Type": "application/json" };
-        const payload = { text: text, target_lang: "ZH" };
-        if (key) payload.key = key;
-        if (proxyToken) { hdrs["X-Proxy-Token"] = proxyToken; payload.token = proxyToken; }
-        return fetch(deeplProxyBase + "/__deepl/translate", {
-          method: "POST",
-          headers: hdrs,
-          body: JSON.stringify(payload)
-        }).then((res) => res.json().then((d) => { if (!res.ok) throw new Error(d.error || ("HTTP " + res.status)); return d; }))
-          .then((data) => {
-            const t = data && data.translations && data.translations[0] && data.translations[0].text;
-            if (!t) throw new Error("empty");
-            return t;
-          });
-      }
-      // 直连模式必须自带 key
-      if (!key) return Promise.reject(new Error("no_key"));
-      return fetch("https://api-free.deepl.com/v2/translate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "DeepL-Auth-Key " + key
-        },
-        body: JSON.stringify({ text: [text], target_lang: "ZH" })
-      }).then((res) => {
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        return res.json();
-      }).then((data) => {
-        const t = data && data.translations && data.translations[0] && data.translations[0].text;
-        if (!t) throw new Error("empty");
-        return t;
-      });
-    }
-
-    function usesDeepl() { return !!(deeplKey || serverHasDeeplKey); }
     function doTranslate(text) {
-      if (usesDeepl()) {
-        return translateViaDeepl(text).catch((e) => {
-          const msg = (e && e.message) || "";
-          if (deeplProxyBase && /401|proxy token|invalid.*token/i.test(msg)) {
-            const lbl = document.getElementById("transSourceLabel");
-            if (lbl) lbl.textContent = "⚠ DeepL 代理 token 可能有误（已回退 MyMemory）";
-          }
-          console.warn("DeepL 翻译失败，回退到 MyMemory：", msg);
-          return translateViaMyMemory(text);
-        });
-      }
       return translateViaMyMemory(text);
     }
 
@@ -1419,7 +1291,7 @@
 
     wordCardClose.addEventListener("click", closeWordCard);
     document.addEventListener("click", (e) => { if (!wordCard.hidden && !wordCard.contains(e.target)) closeWordCard(); });
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape") { if (!wordCard.hidden) closeWordCard(); if (!sidePanel.hidden) closePanel(); if (!settingsModal.hidden) closeSettings(); } });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") { if (!wordCard.hidden) closeWordCard(); if (!sidePanel.hidden) closePanel(); } });
 
     vocabBtn.addEventListener("click", () => openPanel("vocab"));
     historyBtn.addEventListener("click", () => openPanel("history"));
@@ -1427,112 +1299,11 @@
     overlay.addEventListener("click", closePanel);
     document.querySelectorAll(".sp-tab").forEach((b) => b.addEventListener("click", () => switchTab(b.dataset.tab)));
 
-    /* 设置弹窗：DeepL 密钥 */
-    function openSettings() {
-      deeplKeyInput.value = deeplKey || "";
-      proxyTokenInput.value = proxyToken || "";
-      settingsStatus.textContent = "";
-      settingsStatus.className = "settings-status";
-      const help = document.getElementById("deeplKeyHelp");
-      if (serverHasDeeplKey) {
-        deeplKeyInput.placeholder = "（可选）服务器已配置密钥，留空即用服务器密钥";
-        if (help) help.textContent = "检测到服务器端已配置 DeepL 密钥：你无需填写此项，跨设备只需填下方「代理访问 Token」即可使用 DeepL。";
-      } else {
-        deeplKeyInput.placeholder = "粘贴以 :fx 结尾的免费密钥";
-        if (help) help.textContent = "密钥仅保存在本浏览器（localStorage），不会上传至任何服务器。留空则使用默认免费翻译 MyMemory。";
-      }
-      settingsModal.hidden = false;
-      requestAnimationFrame(() => settingsModal.classList.add("open"));
-      deeplKeyInput.focus();
-    }
-    function closeSettings() {
-      settingsModal.classList.remove("open");
-      setTimeout(() => { settingsModal.hidden = true; }, 180);
-    }
+    /* 翻译源标签（静态，仅用 MyMemory） */
     function updateTransSourceLabel() {
-      if (!transSourceLabel) return;
-      if (!usesDeepl()) { transSourceLabel.textContent = "翻译源：MyMemory"; return; }
-      if (deeplProxyBase) {
-        transSourceLabel.textContent = deeplKey ? "翻译源：DeepL（代理）" : "翻译源：DeepL（服务器密钥）";
-      } else {
-        transSourceLabel.textContent = "翻译源：DeepL（直连/CORS受限）";
-      }
+      if (transSourceLabel) transSourceLabel.textContent = "翻译源：MyMemory";
     }
-    function checkDeeplUsage() {
-      if (!usesDeepl()) { settingsStatus.textContent = "请先填写并保存密钥，再查询额度。"; settingsStatus.className = "settings-status err"; return; }
-      settingsStatus.textContent = "正在查询额度…";
-      settingsStatus.className = "settings-status";
-      let call;
-      if (deeplProxyBase) {
-        let qs = ((deeplKey || !serverHasDeeplKey) ? "?key=" + encodeURIComponent(deeplKey || "") : "");
-        if (proxyToken) qs += (qs ? "&" : "?") + "token=" + encodeURIComponent(proxyToken);
-        call = fetch(deeplProxyBase + "/__deepl/usage" + qs, { method: "GET" })
-          .then((res) => res.json().then((d) => { if (!res.ok) throw new Error(d.error || ("HTTP " + res.status)); return d; }));
-      } else {
-        call = fetch("https://api-free.deepl.com/v2/usage", { method: "GET", headers: { "Authorization": "DeepL-Auth-Key " + deeplKey } });
-      }
-      call.then((d) => {
-          const used = d.character_count, lim = d.character_limit;
-          if (used == null || lim == null) throw new Error("无数据");
-          const pct = Math.round((used / lim) * 100);
-          settingsStatus.textContent = "本月已用 " + used.toLocaleString() + " / " + lim.toLocaleString() + " 字符（" + pct + "%）。";
-          settingsStatus.className = "settings-status ok";
-        })
-        .catch((e) => {
-          settingsStatus.textContent = "额度查询失败（" + (e && e.message ? e.message : "网络/CORS") + "）。";
-          settingsStatus.className = "settings-status err";
-        });
-    }
-    settingsBtn.addEventListener("click", openSettings);
-    settingsClose.addEventListener("click", closeSettings);
-    settingsModal.addEventListener("click", (e) => { if (e.target === settingsModal) closeSettings(); });
-    usageSettingsBtn.addEventListener("click", checkDeeplUsage);
-    clearSettingsBtn.addEventListener("click", () => {
-      deeplKey = "";
-      try { localStorage.removeItem(LS_DEEPL); } catch (e) {}
-      deeplKeyInput.value = "";
-      updateTransSourceLabel();
-      settingsStatus.textContent = serverHasDeeplKey ? "已清除本地密钥，继续使用服务器 DeepL 密钥。" : "已清除密钥，翻译将使用 MyMemory。";
-      settingsStatus.className = "settings-status";
-    });
-    saveSettingsBtn.addEventListener("click", () => {
-      const key = deeplKeyInput.value.trim();
-      proxyToken = proxyTokenInput.value.trim();
-      try { localStorage.setItem(LS_PROXY_TOKEN, proxyToken); } catch (e) {}
-      if (!key && !serverHasDeeplKey) {
-        deeplKey = "";
-        try { localStorage.removeItem(LS_DEEPL); } catch (e) {}
-        updateTransSourceLabel();
-        settingsStatus.textContent = "未填写密钥，已恢复使用 MyMemory。";
-        settingsStatus.className = "settings-status";
-        return;
-      }
-      settingsStatus.textContent = "正在测试连接…";
-      settingsStatus.className = "settings-status";
-      // 若未填本地 key 但服务器有 key，传 undefined 让代理使用服务器端密钥
-      translateViaDeepl("test", key || undefined)
-        .then(() => {
-          deeplKey = key;
-          if (key) { try { localStorage.setItem(LS_DEEPL, key); } catch (e) {} }
-          updateTransSourceLabel();
-          settingsStatus.textContent = key ? "已保存，DeepL 连接正常。" : "已保存，DeepL 连接正常（使用服务器密钥）。";
-          settingsStatus.className = "settings-status ok";
-        })
-        .catch((e) => {
-          const msg = (e && e.message) || "";
-          const isProxyAuth = /token|401|unauthorized|forbidden/i.test(msg);
-          let hint = "DeepL 连接失败。";
-          if (deeplProxyBase) {
-            hint += isProxyAuth ? "请到设置确认『代理访问 Token』与服务器 DEEPL_PROXY_TOKEN 一致。" : "请确认 DeepL 密钥有效且代理运行正常。";
-          } else {
-            hint += "当前页面未检测到代理；DeepL 需通过代理（本地 deepl_proxy.py 或部署版）才能访问，否则请改用 MyMemory。";
-          }
-          settingsStatus.textContent = hint + (msg ? "（" + msg + "）" : "");
-          settingsStatus.className = "settings-status err";
-        });
-    });
     updateTransSourceLabel();
-    detectDeeplProxy().then(updateTransSourceLabel);
     window.addEventListener("scroll", () => { if (!wordCard.hidden) closeWordCard(); }, true);
 
     /* 初始化 */
